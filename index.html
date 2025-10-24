@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>עורך סצנת תלת-ממד</title>
+    <!-- טעינת Tailwind CSS לעיצוב הממשק -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow: hidden; /* מניעת גלילה */
+            direction: rtl; /* כיוון מימין לשמאל */
+            background-color: #1F2937; /* bg-gray-800 */
+        }
+        #scene-container {
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f0f0;
+            cursor: default;
+        }
+        canvas {
+            display: block;
+        }
+        /* סגנון לאובייקט שנבחר */
+        .selected-object {
+            border: 2px solid #34D399; /* emerald-400 */
+            background-color: #374151; /* bg-gray-700 */
+        }
+        /* עיצוב כפתורי העלאת קובץ */
+        .texture-upload-input, .bump-upload-input {
+            width: 100%;
+            font-size: 0.875rem; /* text-sm */
+            color: #D1D5DB; /* text-gray-300 */
+        }
+        .texture-upload-input::file-selector-button,
+        .bump-upload-input::file-selector-button {
+            margin-left: 0.5rem; /* file:mr-2 */
+            padding: 0.25rem 0.5rem; /* file:py-1 file:px-2 */
+            border-radius: 0.25rem; /* file:rounded */
+            border-width: 0; /* file:border-0 */
+            font-size: 0.875rem; /* file:text-sm */
+            font-weight: 600; /* file:font-semibold */
+            background-color: #2563EB; /* file:bg-blue-600 */
+            color: #ffffff; /* file:text-white */
+            cursor: pointer;
+        }
+        .texture-upload-input::file-selector-button:hover,
+        .bump-upload-input::file-selector-button:hover {
+            background-color: #1D4ED8; /* hover:file:bg-blue-700 */
+        }
+
+        /* הסתרת סרגלי גלילה בפאנלים (Webkit) */
+        #objects-panel::-webkit-scrollbar,
+        #single-object-controls::-webkit-scrollbar,
+        #lighting-panel::-webkit-scrollbar,
+        #point-light-controls::-webkit-scrollbar,
+        #light-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #objects-panel::-webkit-scrollbar-track,
+        #single-object-controls::-webkit-scrollbar-track,
+        #lighting-panel::-webkit-scrollbar-track,
+        #point-light-controls::-webkit-scrollbar-track,
+        #light-list::-webkit-scrollbar-track {
+            background: #374151; /* bg-gray-700 */
+            border-radius: 4px;
+        }
+        #objects-panel::-webkit-scrollbar-thumb,
+        #single-object-controls::-webkit-scrollbar-thumb,
+        #lighting-panel::-webkit-scrollbar-thumb,
+        #point-light-controls::-webkit-scrollbar-thumb,
+        #light-list::-webkit-scrollbar-thumb {
+            background: #4B5563; /* bg-gray-600 */
+            border-radius: 4px;
+        }
+        #objects-panel::-webkit-scrollbar-thumb:hover,
+        #single-object-controls::-webkit-scrollbar-thumb:hover,
+        #lighting-panel::-webkit-scrollbar-thumb:hover,
+        #point-light-controls::-webkit-scrollbar-thumb:hover,
+        #light-list::-webkit-scrollbar-thumb:hover {
+            background: #6B7280; /* bg-gray-500 */
+        }
+
+        /* סגנון לכפתורי גיזמו פעילים */
+        .gizmo-btn.active {
+            background-color: #2563EB; /* bg-blue-600 */
+        }
+
+        /* סגנון לכפתורים מושבתים */
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* סגנון לתיבת סימון מושבתת */
+         input[type="checkbox"]:disabled + label {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+        }
+
+
+    </style>
+</head>
+<body class="bg-gray-800">
+
+    <!-- סרגל תפריטים עליון -->
+    <div id="top-menu-bar" class="fixed top-0 left-0 right-0 z-50 flex justify-center p-2 space-x-2 bg-gray-800/70 backdrop-blur-sm shadow-lg">
+        <!-- כפתור סצנה (שמור/טען) -->
+        <button id="scene-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="סצנה">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3l-4-4-4 4zM8 7V5c0-1.1.9-2 2-2h4a2 2 0 012 2v2M8 7h8"></path></svg>
+        </button>
+        <!-- כפתור תאורה -->
+        <button id="lighting-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="תאורה">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M12 21v-1m0-16a9 9 0 11-9 9h4.673c.11.02.22.04.33.06A9 9 0 0112 3z"></path></svg>
+        </button>
+        <!-- כפתור אפקטים -->
+        <button id="effects-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="אפקטים">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+        </button>
+        <!-- כפתור אובייקטים -->
+        <button id="objects-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="אובייקטים">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+        </button>
+
+        <!-- קו הפרדה -->
+        <div class="border-l border-gray-600 h-10 my-auto mx-2"></div>
+
+        <!-- כפתורי היסטוריה -->
+        <button id="undo-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="בטל (Ctrl+Z)" disabled>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        </button>
+        <button id="redo-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="בצע שוב (Ctrl+Y)" disabled>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </button>
+
+        <!-- קו הפרדה -->
+        <div class="border-l border-gray-600 h-10 my-auto mx-2"></div>
+
+        <!-- כפתורי גיזמו -->
+        <button id="translate-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition active" title="הזזה (W)">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4H3v3m0-3l4 4M21 3h-7v3m7-3l-4 4M3 21h7v-3M3 21l4-4m14 4h-7v-3m7 3l-4-4"></path></svg>
+        </button>
+        <button id="rotate-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition" title="סיבוב (E)">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.667 0l3.181-3.183m-11.667-1.343a8.25 8.25 0 0 1-1.12-3.832 8.25 8.25 0 0 1 1.12-3.832 8.25 8.25 0 0 1 3.833-1.12 8.25 8.25 0 0 1 3.833 1.12 8.25 8.25 0 0 1 1.12 3.832 8.25 8.25 0 0 1-1.12 3.832 8.25 8.25 0 0 1-3.833 1.12 8.25 8.25 0 0 1-3.833-1.12Z" />
+            </svg>
+        </button>
+        <button id="scale-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition" title="גודל (R)">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8V5h3m12 0h3v3m0 11v3h-3m-12 0H3v-3"></path></svg>
+        </button>
+
+        <!-- קו הפרדה חדש -->
+        <div class="border-l border-gray-600 h-10 my-auto mx-2"></div>
+
+        <!-- כפתורי קואליציה ואופוזיציה -->
+        <button id="coalition-btn" class="px-4 py-2 text-white rounded-full bg-blue-600 hover:bg-blue-700 transition text-sm font-semibold" title="קואליציה">
+            קואליציה
+        </button>
+        <button id="opposition-btn" class="px-4 py-2 text-white rounded-full bg-orange-600 hover:bg-orange-700 transition text-sm font-semibold" title="אופוזיציה">
+            אופוזיציה
+        </button>
+
+        <!-- כפתור מחיקה -->
+        <button id="delete-btn" class="p-3 text-white rounded-full hover:bg-red-600 transition" title="מחק (Delete)">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+
+    </div>
+
+    <!-- פאנלים צפים -->
+    <div id="scene-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 p-6 rounded-lg shadow-xl hidden">
+        <h2 class="text-xl font-semibold text-white mb-4 draggable-handle cursor-move">בקרי סצנה</h2>
+        <button class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white close-panel-btn">
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="space-y-3">
+            <button id="save-scene-btn" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white transition-colors">שמור סצנה</button>
+            <div>
+                <label for="load-scene-input" class="block text-sm font-medium text-gray-300 mb-1">טען סצנה (JSON)</label>
+                <input type="file" id="load-scene-input" class="texture-upload-input" accept=".json">
+            </div>
+        </div>
+    </div>
+
+    <div id="lighting-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden flex flex-col max-h-[80vh]">
+        <div class="p-6 pb-4 flex justify-between items-center draggable-handle cursor-move">
+            <h2 class="text-xl font-semibold text-white">בקרי תאורה</h2>
+            <button class="p-1 text-gray-400 hover:text-white close-panel-btn">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="overflow-y-auto p-6 pt-0">
+            <!-- רשימת מנורות -->
+            <h3 class="text-lg font-medium text-gray-200 mb-2">מנורות בסצנה</h3>
+            <div id="light-list" class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                <div class="text-gray-400 text-sm">אין מנורות נקודתיות להצגה.</div>
+            </div>
+             <!-- כפתור הוספת מנורה -->
+             <button id="add-point-light-btn" class="w-full px-4 py-2 mb-4 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors">הוסף מנורה נקודתית</button>
+
+            <hr class="my-3 border-gray-600">
+            <h3 class="text-lg font-medium text-gray-200 mt-4">סביבה (HDRI)</h3>
+            <div>
+                <label for="load-hdr-input" class="block text-sm font-medium text-gray-300 mb-1">טען קובץ HDRI (.hdr)</label>
+                <input type="file" id="load-hdr-input" class="texture-upload-input" accept=".hdr">
+            </div>
+            <button id="clear-hdr-btn" class="w-full px-4 py-2 mt-2 bg-gray-600 hover:bg-gray-700 rounded text-white transition-colors">נקה סביבה</button>
+        </div>
+    </div>
+
+
+    <div id="effects-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 p-6 rounded-lg shadow-xl hidden">
+        <h2 class="text-xl font-semibold text-white mb-4 draggable-handle cursor-move">אפקטים (עדשה)</h2>
+         <button class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white close-panel-btn">
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="space-y-3">
+            <h3 class="text-lg font-medium text-gray-200">זוהר (Bloom)</h3>
+            <label for="bloom-strength" class="block text-sm font-medium text-gray-300">חוזק</label>
+            <input type="range" id="bloom-strength" min="0" max="3" step="0.01" value="0.5" class="w-full">
+            <label for="bloom-radius" class="block text-sm font-medium text-gray-300">רדיוס</label>
+            <input type="range" id="bloom-radius" min="0" max="1" step="0.01" value="0.1" class="w-full">
+            <label for="bloom-threshold" class="block text-sm font-medium text-gray-300">סף</label>
+            <input type="range" id="bloom-threshold" min="0" max="1" step="0.01" value="0.8" class="w-full">
+
+            <h3 class="text-lg font-medium text-gray-200 mt-4">פוקוס עדין (Bokeh)</h3>
+            <label for="bokeh-focus" class="block text-sm font-medium text-gray-300">מרחק פוקוס</label>
+            <input type="range" id="bokeh-focus" min="0" max="100" step="1" value="10" class="w-full">
+            <label for="bokeh-aperture" class="block text-sm font-medium text-gray-300">צמצם</label>
+            <input type="range" id="bokeh-aperture" min="0" max="10" step="0.1" value="1" class="w-full">
+            <label for="bokeh-maxblur" class="block text-sm font-medium text-gray-300">טשטוש מקס'</label>
+            <input type="range" id="bokeh-maxblur" min="0" max="0.1" step="0.001" value="0.01" class="w-full">
+        </div>
+    </div>
+
+    <div id="objects-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden h-[70vh] flex flex-col">
+         <div class="p-6 pb-4 flex justify-between items-center draggable-handle cursor-move">
+            <h2 class="text-xl font-semibold text-white">אובייקטים בסצנה</h2>
+            <button class="p-1 text-gray-400 hover:text-white close-panel-btn">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="object-list" class="space-y-4 overflow-y-auto p-6 pt-0 flex-grow">
+            <!-- הרשימה תתמלא באופן דינמי על ידי JavaScript -->
+            <div class="text-gray-400">טוען מודל...</div>
+        </div>
+    </div>
+
+    <!-- פאנל אובייקט בודד (שמאל) -->
+    <div id="single-object-panel" class="fixed top-1/2 left-5 -translate-y-1/2 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden">
+        <div class="draggable-handle cursor-move p-6 pb-2">
+             <h3 id="single-object-title-static" class="font-semibold text-lg text-white truncate">אובייקט</h3>
+        </div>
+        <button id="close-single-panel-btn" class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white">
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div id="single-object-controls" class="p-6 pt-2 max-h-[70vh] overflow-y-auto">
+            <!-- התוכן יוכנס לכאן דינמית -->
+        </div>
+    </div>
+
+    <!-- פאנל מנורה נקודתית (שמאל) -->
+    <div id="point-light-panel" class="fixed top-1/2 left-5 -translate-y-1/2 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden">
+        <div class="draggable-handle cursor-move p-6 pb-2">
+             <h3 id="point-light-title" class="font-semibold text-lg text-white truncate">מנורה נקודתית</h3>
+        </div>
+        <button id="close-point-light-panel-btn" class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white">
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div id="point-light-controls" class="p-6 pt-2 space-y-4 max-h-[70vh] overflow-y-auto">
+             <button
+                class="duplicate-btn w-full px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
+                data-object-id=""> <!-- ID יתעדכן דינמית -->
+                שכפל מנורה
+             </button>
+             <div>
+                <label for="pl-intensity-slider" class="text-sm text-gray-300">עוצמה (<span id="pl-intensity-value">50</span>)</label>
+                <input type="range" class="w-full point-light-control" id="pl-intensity-slider" min="0" max="150" step="1" value="50">
+             </div>
+             <div>
+                <label for="pl-distance-slider" class="text-sm text-gray-300">טווח (<span id="pl-distance-value">20</span>)</label>
+                <input type="range" class="w-full point-light-control" id="pl-distance-slider" min="0" max="100" step="0.5" value="20">
+             </div>
+             <div>
+                <label for="pl-color-picker" class="text-sm text-gray-300">צבע</label>
+                <input type="color" class="w-full h-10 p-1 bg-gray-700 border border-gray-600 rounded cursor-pointer point-light-control" id="pl-color-picker" value="#ffffff">
+             </div>
+             <hr class="border-gray-600">
+             <div class="flex items-center space-x-2 space-x-reverse">
+                 <input type="checkbox" class="point-light-control form-checkbox h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500" id="pl-cast-shadow-checkbox" checked>
+                 <label for="pl-cast-shadow-checkbox" class="text-sm text-gray-300">הטל צל</label>
+             </div>
+             <div>
+                <label for="pl-shadow-bias-slider" class="text-sm text-gray-300">היסט צל (Bias)</label>
+                <input type="range" class="w-full point-light-control" id="pl-shadow-bias-slider" min="-0.01" max="0.01" step="0.0001" value="-0.0005">
+             </div>
+             <div>
+                <label for="pl-shadow-normal-bias-slider" class="text-sm text-gray-300">היסט נורמל (Normal Bias)</label>
+                <input type="range" class="w-full point-light-control" id="pl-shadow-normal-bias-slider" min="0" max="0.1" step="0.001" value="0.05">
+             </div>
+             <p class="text-gray-400 text-sm">הזז את המנורה באמצעות הגיזמו.</p>
+        </div>
+    </div>
+
+
+    <!-- קונטיינר לסצנת ה-Three.js -->
+    <div id="scene-container"></div>
+
+
+    <!-- טעינת Three.js וספריות עזר -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+                "tween": "https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@23.1.2/dist/tween.esm.js",
+                 "fflate": "https://cdn.jsdelivr.net/npm/fflate@0.8.1/esm/browser.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'; // [נוסף] FBX Loader
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+        import * as TWEEN from 'tween';
+        // fflate נטען דרך importmap, אין צורך ביבוא ישיר
+
+        let scene, camera, renderer, controls;
+        let composer, bloomPass, bokehPass;
+        let transformControls;
+        let sceneObjects = [];
+        let pointLights = [];
+        let lightHelpersMap = new Map();
+        let lightRangeIndicator = null;
+        let knessetBounds = null; // תיבה תוחמת לכנסת
+        const boundsPadding = 2; // מרווח פנימי מהגבולות
+
+        let history = [];
+        let historyIndex = -1;
+        const MAX_HISTORY = 20;
+        let transformBeforeState = null;
+
+        const MAX_SHADOW_CASTING_POINT_LIGHTS = 4;
+        const KNESSET_MODEL_URL = 'https://raw.githubusercontent.com/orengamchi/kenesset_ai/main/kenesset_ai.glb';
+        
+        // [נוסף] כתובות מודלים של קואליציה
+        const FBX_MODEL_URL = 'https://raw.githubusercontent.com/orengamchi/avatari/main/yair%20n.fbx';
+        const AMSALEM_MODEL_URL = 'https://raw.githubusercontent.com/orengamchi/avatari/main/amsalem.fbx';
+        const DERI_MODEL_URL = 'https://raw.githubusercontent.com/orengamchi/avatari/main/deri.fbx';
+
+        const loadingManager = new THREE.LoadingManager();
+        const textureLoader = new THREE.TextureLoader();
+        const gltfLoader = new GLTFLoader(loadingManager);
+        const fbxLoader = new FBXLoader(loadingManager); // [נוסף] טוען FBX
+        const rgbeLoader = new RGBELoader(loadingManager);
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        let globalObjectCounter = 1;
+        let selectedObjects = [];
+
+        // DOM Elements
+        const sceneContainer = document.getElementById('scene-container');
+        const sidebarList = document.getElementById('object-list');
+        const lightListContainer = document.getElementById('light-list');
+        const saveBtn = document.getElementById('save-scene-btn');
+        const loadInput = document.getElementById('load-scene-input');
+        const addPointLightBtn = document.getElementById('add-point-light-btn');
+        const loadHdrInput = document.getElementById('load-hdr-input');
+        const clearHdrBtn = document.getElementById('clear-hdr-btn');
+        const bloomStrengthSlider = document.getElementById('bloom-strength');
+        const bloomRadiusSlider = document.getElementById('bloom-radius');
+        const bloomThresholdSlider = document.getElementById('bloom-threshold');
+        const bokehFocusSlider = document.getElementById('bokeh-focus');
+        const bokehApertureSlider = document.getElementById('bokeh-aperture');
+        const bokehMaxblurSlider = document.getElementById('bokeh-maxblur');
+        const sceneBtn = document.getElementById('scene-btn');
+        const lightingBtn = document.getElementById('lighting-btn');
+        const effectsBtn = document.getElementById('effects-btn');
+        const objectsBtn = document.getElementById('objects-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        const translateBtn = document.getElementById('translate-btn');
+        const rotateBtn = document.getElementById('rotate-btn');
+        const scaleBtn = document.getElementById('scale-btn');
+        const gizmoButtons = [translateBtn, rotateBtn, scaleBtn];
+        const deleteBtn = document.getElementById('delete-btn');
+        const scenePanel = document.getElementById('scene-panel');
+        const lightingPanel = document.getElementById('lighting-panel');
+        const effectsPanel = document.getElementById('effects-panel');
+        const objectsPanel = document.getElementById('objects-panel');
+        const singleObjectPanel = document.getElementById('single-object-panel');
+        const closeSinglePanelBtn = document.getElementById('close-single-panel-btn');
+        const pointLightPanel = document.getElementById('point-light-panel');
+        const closePointLightPanelBtn = document.getElementById('close-point-light-panel-btn');
+        const plIntensitySlider = document.getElementById('pl-intensity-slider');
+        const plDistanceSlider = document.getElementById('pl-distance-slider');
+        const plIntensityValueSpan = document.getElementById('pl-intensity-value');
+        const plDistanceValueSpan = document.getElementById('pl-distance-value');
+        const plColorPicker = document.getElementById('pl-color-picker');
+        const plCastShadowCheckbox = document.getElementById('pl-cast-shadow-checkbox');
+        const plShadowBiasSlider = document.getElementById('pl-shadow-bias-slider');
+        const plShadowNormalBiasSlider = document.getElementById('pl-shadow-normal-bias-slider');
+        const coalitionBtn = document.getElementById('coalition-btn'); // [נוסף]
+        const allPanels = [scenePanel, lightingPanel, effectsPanel, objectsPanel, singleObjectPanel, pointLightPanel];
+
+        // --- Initialization ---
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            camera = new THREE.PerspectiveCamera(75, sceneContainer.clientWidth / sceneContainer.clientHeight, 0.1, 1000);
+            camera.position.set(10, 10, 10);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(sceneContainer.clientWidth, sceneContainer.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            sceneContainer.appendChild(renderer.domElement);
+
+            // יצירת 4 מנורות נקודתיות במיקומים שונים
+            createPointLight(new THREE.Vector3(5, 5, 5), 30, 15, 0xffffff);
+            createPointLight(new THREE.Vector3(-5, 5, 5), 30, 15, 0xffffff);
+            createPointLight(new THREE.Vector3(5, 5, -5), 30, 15, 0xffffff);
+            createPointLight(new THREE.Vector3(-5, 5, -5), 30, 15, 0xffffff);
+
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.target.set(0, 2, 0);
+            controls.maxPolarAngle = Math.PI / 2.05; // הגבלת זווית המצלמה (קצת מעל האופק)
+
+            transformControls = new TransformControls(camera, renderer.domElement);
+            transformControls.addEventListener('dragging-changed', (event) => {
+                controls.enabled = !event.value;
+                if (event.value) {
+                    if (transformControls.object) {
+                        transformBeforeState = { position: transformControls.object.position.clone(), rotation: transformControls.object.rotation.clone(), scale: transformControls.object.scale.clone() };
+                    }
+                } else if (transformBeforeState && transformControls.object) {
+                    addHistory({ type: 'transform', object: transformControls.object, before: transformBeforeState, after: { position: transformControls.object.position.clone(), rotation: transformControls.object.rotation.clone(), scale: transformControls.object.scale.clone() } });
+                    transformBeforeState = null;
+                }
+            });
+            transformControls.addEventListener('objectChange', () => {
+                if (transformControls.object) {
+                    const actualLight = lightHelpersMap.get(transformControls.object);
+                    if (actualLight) {
+                        actualLight.position.copy(transformControls.object.position);
+                        if (actualLight instanceof THREE.PointLight) updateRangeIndicator();
+                    }
+                    const parentModel = transformControls.object;
+                    if (parentModel && parentModel.userData.transform) {
+                         parentModel.userData.transform.position.copy(parentModel.position);
+                         parentModel.userData.transform.rotation.copy(parentModel.rotation);
+                         parentModel.userData.transform.scale.copy(parentModel.scale);
+                    }
+                }
+            });
+            scene.add(transformControls);
+
+            composer = new EffectComposer(renderer);
+            const renderPass = new RenderPass(scene, camera); composer.addPass(renderPass);
+            bloomPass = new UnrealBloomPass(new THREE.Vector2(sceneContainer.clientWidth, sceneContainer.clientHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = parseFloat(bloomThresholdSlider.value);
+            bloomPass.strength = parseFloat(bloomStrengthSlider.value);
+            bloomPass.radius = parseFloat(bloomRadiusSlider.value);
+            composer.addPass(bloomPass);
+            bokehPass = new BokehPass(scene, camera, {
+                focus: parseFloat(bokehFocusSlider.value),
+                aperture: parseFloat(bokehApertureSlider.value) * 1e-5,
+                maxblur: parseFloat(bokehMaxblurSlider.value)
+            });
+            composer.addPass(bokehPass);
+            const outputPass = new OutputPass(); composer.addPass(outputPass);
+
+            loadAllModels();
+
+            window.addEventListener('resize', onWindowResize);
+
+            // --- Event Listeners ---
+            sidebarList.addEventListener('click', onSidebarClick);
+            lightListContainer.addEventListener('click', onLightListClick);
+            addPointLightBtn.addEventListener('click', handleAddPointLight);
+
+            sceneContainer.addEventListener('click', (e) => {
+                 const isClickOnGizmo = transformControls.dragging;
+                 const isClickOnCanvas = e.target === renderer.domElement;
+
+                 if (isClickOnCanvas && !isClickOnGizmo) {
+                     const rect = renderer.domElement.getBoundingClientRect();
+                     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                     raycaster.setFromCamera(mouse, camera);
+                     const intersects = raycaster.intersectObjects(sceneObjects.map(o => o.mesh), false);
+
+                     if (intersects.length > 0) {
+                         let intersectedSceneObject = null;
+                         for (const intersect of intersects) {
+                             intersectedSceneObject = sceneObjects.find(obj => obj.mesh === intersect.object);
+                             if (intersectedSceneObject) break;
+                         }
+                         if (intersectedSceneObject) {
+                             selectObject(intersectedSceneObject, e);
+                         }
+                     } else if (!(e.ctrlKey || e.metaKey)) {
+                         deselectObject();
+                         closeSinglePanels();
+                     }
+                 }
+            });
+             sceneContainer.addEventListener('dblclick', onDoubleClick);
+
+            saveBtn.addEventListener('click', saveScene);
+            loadInput.addEventListener('change', loadScene);
+            loadHdrInput.addEventListener('change', onHdrLoad);
+            clearHdrBtn.addEventListener('click', onClearHdr);
+            sceneBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(scenePanel); });
+            lightingBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(lightingPanel); });
+            effectsBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(effectsPanel); });
+            objectsBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(objectsPanel); });
+            
+            coalitionBtn.addEventListener('click', (e) => { e.stopPropagation(); loadCoalitionModels(); }); // [נוסף]
+
+            document.querySelectorAll('.close-panel-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); const panel = e.target.closest('.fixed'); if (panel) panel.classList.add('hidden'); });
+            });
+            undoBtn.addEventListener('click', (e) => { e.stopPropagation(); undo(); });
+            redoBtn.addEventListener('click', (e) => { e.stopPropagation(); redo(); });
+            deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteSelected(); });
+            translateBtn.addEventListener('click', (e) => { e.stopPropagation(); setGizmoMode('translate'); });
+            rotateBtn.addEventListener('click', (e) => { e.stopPropagation(); setGizmoMode('rotate'); });
+            scaleBtn.addEventListener('click', (e) => { e.stopPropagation(); setGizmoMode('scale'); });
+            closeSinglePanelBtn.addEventListener('click', (e) => { e.stopPropagation(); singleObjectPanel.classList.add('hidden'); });
+            closePointLightPanelBtn.addEventListener('click', (e) => { e.stopPropagation(); pointLightPanel.classList.add('hidden'); });
+            singleObjectPanel.addEventListener('click', onSinglePanelClick);
+            singleObjectPanel.addEventListener('change', onSinglePanelChange);
+            pointLightPanel.addEventListener('click', onPointLightPanelClick);
+            pointLightPanel.addEventListener('input', onPointLightPanelChange);
+            pointLightPanel.addEventListener('change', onPointLightPanelChange);
+
+            makeDraggable(scenePanel);
+            makeDraggable(lightingPanel);
+            makeDraggable(effectsPanel);
+            makeDraggable(objectsPanel);
+            makeDraggable(singleObjectPanel);
+            makeDraggable(pointLightPanel);
+
+            allPanels.forEach(panel => { panel.addEventListener('click', (e) => e.stopPropagation()); });
+            bloomStrengthSlider.addEventListener('input', onBloomChange);
+            bloomRadiusSlider.addEventListener('input', onBloomChange);
+            bloomThresholdSlider.addEventListener('input', onBloomChange);
+            bokehFocusSlider.addEventListener('input', onBokehChange);
+            bokehApertureSlider.addEventListener('input', onBokehChange);
+            bokehMaxblurSlider.addEventListener('input', onBokehChange);
+            window.addEventListener('keydown', onKeyDown);
+            updateHistoryButtons();
+        }
+
+        // --- Light Creation ---
+        function createPointLight(position, intensity, distance = 20, color = 0xffffff, castShadow = true, shadowBias = -0.0005, shadowNormalBias = 0.05) {
+             const currentShadowCasters = pointLights.filter(pl => pl.light.castShadow).length;
+             let actualCastShadow = castShadow;
+             if (castShadow && currentShadowCasters >= MAX_SHADOW_CASTING_POINT_LIGHTS) {
+                 actualCastShadow = false;
+                 console.warn(`מגבלת מנורות מטילות צל (${MAX_SHADOW_CASTING_POINT_LIGHTS}) הושגה. המנורה החדשה לא תטיל צל.`);
+             }
+
+            const pointLight = new THREE.PointLight(color, intensity, distance);
+            pointLight.position.copy(position);
+            pointLight.castShadow = actualCastShadow;
+            pointLight.shadow.bias = shadowBias;
+            pointLight.shadow.normalBias = shadowNormalBias;
+            pointLight.shadow.mapSize.width = 512; pointLight.shadow.mapSize.height = 512;
+            pointLight.shadow.camera.near = 0.5; pointLight.shadow.camera.far = 50;
+            scene.add(pointLight);
+
+            const helperGeo = new THREE.SphereGeometry(0.3, 16, 8);
+            const helperMat = new THREE.MeshBasicMaterial({ color: color, wireframe: true });
+            const helperMesh = new THREE.Mesh(helperGeo, helperMat);
+            const lightIndex = pointLights.length + 1;
+            helperMesh.name = `PointLight Helper ${lightIndex}`;
+            helperMesh.position.copy(pointLight.position);
+            scene.add(helperMesh);
+
+            lightHelpersMap.set(helperMesh, pointLight);
+            helperMesh.userData.transform = { position: helperMesh.position.clone(), rotation: helperMesh.rotation.clone(), scale: helperMesh.scale.clone() };
+
+            const sceneObjectData = { id: helperMesh.uuid, stableId: helperMesh.uuid, name: `מנורה נקודתית ${lightIndex}`, mesh: helperMesh, originalMaterial: helperMat.clone(), parentModel: helperMesh, isLightHelper: true, lightType: 'point' };
+            sceneObjects.push(sceneObjectData);
+            pointLights.push({ light: pointLight, helper: helperMesh, data: sceneObjectData });
+
+            populateLightList();
+            return { light: pointLight, helper: helperMesh, data: sceneObjectData };
+        }
+
+        function handleAddPointLight() {
+             const position = new THREE.Vector3(Math.random() * 10 - 5, 5, Math.random() * 10 - 5);
+             const { light, helper, data } = createPointLight(position, 50, 20);
+             addHistory({ type: 'addLight', lightType: 'point', addedLight: light, addedHelper: helper, addedSceneObjectData: data });
+        }
+
+        // --- Model Loading ---
+        function getModelNameLogic(url) {
+            const chairURL = 'https://raw.githubusercontent.com/orengamchi/kenesset_ai/main/seat_big.glb';
+             
+             // [שונה] לוגיקת זיהוי שמות למודלי FBX
+             if (url.toLowerCase().endsWith('.fbx')) {
+                 if (url.includes('yair')) return () => "מודל יאיר";
+                 if (url.includes('amsalem')) return () => "מודל אמסלם";
+                 if (url.includes('deri')) return () => "מודל דרעי";
+                 return () => "מודל FBX"; // Fallback
+             }
+            if (url === chairURL) {
+                return (objectName, material) => { const matName = Array.isArray(material) ? (material[0] ? material[0].name : objectName) : (material.name || objectName); if (matName === 'kneset_chair_Color_C') return 'ריפוד כיסא מנהלים'; if (matName === 'wheels') return 'גלגלי כיסא מנהלים'; if (matName === 'chair_low_seat_BaseColor') return 'מושב כיסא מנהלים'; if (Array.isArray(material)) { const names = material.map(m => m.name).filter(Boolean); if (names.includes('kneset_chair_Color_C') && names.includes('wheels')) return 'כיסא מנהלים (גוף וגלגלים)'; } return null; };
+            }
+             if (url === KNESSET_MODEL_URL) {
+                 return () => "מודל הכנסת"; // תן שם גנרי לכל חלקי הכנסת
+             }
+            return () => null;
+        }
+
+        // [נוסף] פונקציה לטעינת מודלי הקואליציה
+        async function loadCoalitionModels() {
+            console.log('טוען מודלים של קואליציה...');
+            coalitionBtn.disabled = true;
+            coalitionBtn.textContent = 'טוען...';
+
+            const modelsToLoad = [
+                { url: FBX_MODEL_URL, options: { scale: new THREE.Vector3(0.01, 0.01, 0.01), position: new THREE.Vector3(-3, 0, -3), nameLogic: getModelNameLogic(FBX_MODEL_URL), isLocked: false } },
+                { url: AMSALEM_MODEL_URL, options: { scale: new THREE.Vector3(0.01, 0.01, 0.01), position: new THREE.Vector3(-1, 0, -3), nameLogic: getModelNameLogic(AMSALEM_MODEL_URL), isLocked: false } },
+                { url: DERI_MODEL_URL, options: { scale: new THREE.Vector3(0.01, 0.01, 0.01), position: new THREE.Vector3(1, 0, -3), nameLogic: getModelNameLogic(DERI_MODEL_URL), isLocked: false } }
+            ];
+
+            try {
+                for (const modelData of modelsToLoad) {
+                    const newModel = await loadFBXModel(modelData.url, modelData.options);
+                    // TODO: ניתן להוסיף לוגיקת היסטוריה עבור הוספת מודל
+                }
+                console.log('מודלים של קואליציה נטענו.');
+                populateSidebar(); // רענון רשימת האובייקטים
+            } catch (error) {
+                console.error('שגיאה בטעינת מודלים של קואליציה:', error);
+            } finally {
+                coalitionBtn.disabled = false;
+                coalitionBtn.textContent = 'קואליציה';
+            }
+        }
+
+        async function loadAllModels(modelsToLoad = null) {
+            const modelsToRemove = sceneObjects.filter(obj => obj.parentModel && !obj.isLightHelper).map(obj => obj.parentModel);
+            const uniqueModelsToRemove = [...new Set(modelsToRemove)];
+            uniqueModelsToRemove.forEach(model => scene.remove(model));
+            sceneObjects = sceneObjects.filter(obj => obj.isLightHelper);
+            deselectObject();
+            closeSinglePanels();
+            knessetBounds = null;
+
+            let modelList;
+            if (modelsToLoad) {
+                modelList = modelsToLoad.map(modelData => ({
+                    url: modelData.url,
+                    options: {
+                        scale: new THREE.Vector3().fromArray(modelData.transform.scale),
+                        position: new THREE.Vector3().fromArray(modelData.transform.position),
+                        rotation: new THREE.Euler().fromArray(modelData.transform.rotation),
+                        nameLogic: getModelNameLogic(modelData.url),
+                        isLocked: modelData.url === KNESSET_MODEL_URL
+                    },
+                    materials: modelData.materials
+                }));
+            } else {
+                sidebarList.innerHTML = `<div class="text-gray-400">טוען מודלים...</div>`;
+                const chairURL = 'https://raw.githubusercontent.com/orengamchi/kenesset_ai/main/seat_big.glb';
+                modelList = [
+                     { url: KNESSET_MODEL_URL, options: { scale: new THREE.Vector3(0.5, 0.5, 0.5), position: new THREE.Vector3(0, 0, 0), nameLogic: getModelNameLogic(KNESSET_MODEL_URL), isLocked: true }, materials: null },
+                    { url: chairURL, options: { scale: new THREE.Vector3(3, 3, 3), position: new THREE.Vector3(3, 0, 3), nameLogic: getModelNameLogic(chairURL), isLocked: false }, materials: null }
+                     // [הוסר] מודל יאיר נטען עכשיו מכפתור הקואליציה
+                ];
+            }
+            try {
+                for (const modelData of modelList) {
+                     let newModel;
+                     // [שונה] בחירת טוען לפי סוג קובץ
+                     if (modelData.url.toLowerCase().endsWith('.glb') || modelData.url.toLowerCase().endsWith('.gltf')) {
+                        newModel = await loadGLBModel(modelData.url, modelData.options);
+                     } else if (modelData.url.toLowerCase().endsWith('.fbx')) {
+                        newModel = await loadFBXModel(modelData.url, modelData.options);
+                     } else {
+                         console.warn(`Unsupported model format: ${modelData.url}`);
+                         continue;
+                     }
+
+                    if (modelData.options.rotation) { newModel.rotation.copy(modelData.options.rotation); if (newModel.userData.transform) { newModel.userData.transform.rotation.copy(newModel.rotation); } }
+                     if (modelData.url === KNESSET_MODEL_URL) {
+                         knessetBounds = new THREE.Box3().setFromObject(newModel);
+                         console.log("Knesset Bounds Calculated:", knessetBounds);
+                     }
+                    if (modelData.materials) { for (const stableId in modelData.materials) { const matProps = modelData.materials[stableId]; const targetObject = sceneObjects.find(obj => obj.stableId === stableId && obj.parentModel === newModel); if (targetObject) { const materialToChange = getMaterialToChange(targetObject.mesh); const applyLoadedProps = (mat) => { if (!matProps.textureDataUrl && matProps.color) { mat.color.set(matProps.color.startsWith('#') ? matProps.color : "#" + matProps.color); } else { mat.color.set(0xffffff); } if (matProps.roughness !== undefined) mat.roughness = matProps.roughness; if (matProps.metalness !== undefined) mat.metalness = matProps.metalness; mat.aoMap = null; mat.needsUpdate = true; }; if (Array.isArray(materialToChange)) { materialToChange.forEach(applyLoadedProps); } else if(materialToChange) { applyLoadedProps(materialToChange); } if (matProps.textureDataUrl) { await applyTextureFromDataUrl(targetObject, matProps.textureDataUrl, false); } if (matProps.bumpDataUrl) { await applyBumpMapFromDataUrl(targetObject, matProps.bumpDataUrl, false); } } } }
+                }
+                console.log("All models loaded successfully.");
+                populateSidebar();
+            } catch (error) {
+                console.error("Failed to load one or more models:", error);
+                sidebarList.innerHTML = `<div class="text-red-400">שגיאה בטעינת מודלים.</div>`;
+            }
+        }
+
+        function loadGLBModel(url, options) {
+             return new Promise((resolve, reject) => {
+                 gltfLoader.load(url, (gltf) => {
+                     const model = gltf.scene;
+                     model.userData.url = url;
+                     model.userData.initialOptions = options;
+                     model.userData.transform = { position: (options.position || new THREE.Vector3()).clone(), rotation: (options.rotation || new THREE.Euler()).clone(), scale: (options.scale || new THREE.Vector3(1,1,1)).clone() };
+                     model.scale.copy(model.userData.transform.scale);
+                     model.position.copy(model.userData.transform.position);
+                     model.rotation.copy(model.userData.transform.rotation);
+                     model.userData.isLocked = options.isLocked || false;
+
+                     model.traverse((child) => {
+                         if (child.isMesh) {
+                             child.castShadow = true; child.receiveShadow = true;
+                             child.userData.stableId = child.uuid;
+                             child.userData.isLocked = model.userData.isLocked;
+
+                             const originalMaterial = Array.isArray(child.material) ? child.material.map(m => m.clone()) : child.material.clone();
+                             let newMaterial, objectName = child.name;
+                             const processMaterial = (mat) => { const matClone = mat.clone(); matClone.userData = {}; matClone.aoMap = null; return matClone; };
+                             if (Array.isArray(child.material)) { newMaterial = child.material.map(processMaterial); child.material = newMaterial; const materialNames = child.material.map(m => m.name).filter(Boolean); if (materialNames.length > 0) objectName = materialNames.join(' / '); } else if (child.material) { newMaterial = processMaterial(child.material); child.material = newMaterial; if (newMaterial.name && newMaterial.name !== 'default') objectName = newMaterial.name; } else { newMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd }); newMaterial.userData = {}; child.material = newMaterial; }
+
+                             if (options.nameLogic) {
+                                 const specificName = options.nameLogic(objectName, newMaterial);
+                                 if (specificName) objectName = specificName;
+                             }
+                             if (!objectName || objectName.startsWith('Mesh') || objectName.startsWith('pasted_') || objectName.startsWith('Group')) { objectName = `חלק_${globalObjectCounter++}`; }
+
+                             sceneObjects.push({ id: child.uuid, stableId: child.userData.stableId, name: objectName, mesh: child, originalMaterial: originalMaterial, parentModel: model });
+                         }
+                     });
+                     scene.add(model);
+                     resolve(model);
+                 }, (xhr) => { if (sidebarList.innerHTML.includes('טוען')) { sidebarList.innerHTML = `<div class="text-gray-400">טוען: ${url.split('/').pop()}... ${Math.round(xhr.loaded / xhr.total * 100)}%</div>`; } }, (error) => { console.error(`Error loading ${url}:`, error); reject(error); });
+             });
+        }
+
+         // [נוסף] פונקציה לטעינת מודל FBX
+         function loadFBXModel(url, options) {
+             return new Promise((resolve, reject) => {
+                 fbxLoader.load(url, (object) => { // 'object' הוא Group המכיל את המודל
+                     const model = object;
+                     model.userData.url = url;
+                     model.userData.initialOptions = options;
+                     model.userData.transform = { position: (options.position || new THREE.Vector3()).clone(), rotation: (options.rotation || new THREE.Euler()).clone(), scale: (options.scale || new THREE.Vector3(1,1,1)).clone() };
+                     model.scale.copy(model.userData.transform.scale);
+                     model.position.copy(model.userData.transform.position);
+                     model.rotation.copy(model.userData.transform.rotation);
+                     model.userData.isLocked = options.isLocked || false;
+
+                     model.traverse((child) => {
+                         if (child.isMesh) {
+                             child.castShadow = true;
+                             child.receiveShadow = true;
+                             child.userData.stableId = child.uuid; // שימוש ב-UUID כברירת מחדל, כי אין stable ID מובנה ב-FBX
+                             child.userData.isLocked = model.userData.isLocked;
+
+                             // FBX עשוי להגיע עם חומרים שונים, ננסה להמיר ל-StandardMaterial אם צריך
+                             const originalMaterial = Array.isArray(child.material) ? child.material.map(m => m.clone()) : child.material.clone();
+                             let newMaterial, objectName = child.name;
+
+                             const processMaterial = (mat) => {
+                                 const standardMat = new THREE.MeshStandardMaterial({
+                                     color: mat.color || 0xdddddd,
+                                     map: mat.map || null,
+                                     roughness: mat.roughness !== undefined ? mat.roughness : 0.8, // ברירת מחדל גבוהה יותר לחספוס
+                                     metalness: mat.metalness !== undefined ? mat.metalness : 0.1 // ברירת מחדל נמוכה למתכתיות
+                                 });
+                                 standardMat.userData = {};
+                                 return standardMat;
+                             };
+
+                             if (Array.isArray(child.material)) {
+                                 newMaterial = child.material.map(processMaterial);
+                                 child.material = newMaterial;
+                                 const materialNames = child.material.map(m => m.name).filter(Boolean);
+                                 if (materialNames.length > 0) objectName = materialNames.join(' / ');
+                             } else if (child.material) {
+                                 newMaterial = processMaterial(child.material);
+                                 child.material = newMaterial;
+                                 if (newMaterial.name && newMaterial.name !== 'default') objectName = newMaterial.name;
+                             } else {
+                                 newMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+                                 newMaterial.userData = {};
+                                 child.material = newMaterial;
+                             }
+
+
+                             if (options.nameLogic) {
+                                 const specificName = options.nameLogic(objectName, newMaterial);
+                                 if (specificName) objectName = specificName;
+                             }
+                              if (!objectName || objectName.startsWith('Mesh') || objectName.startsWith('Group')) { objectName = `חלק FBX_${globalObjectCounter++}`; }
+
+
+                             sceneObjects.push({ id: child.uuid, stableId: child.userData.stableId, name: objectName, mesh: child, originalMaterial: originalMaterial, parentModel: model });
+                         }
+                     });
+                     scene.add(model);
+                     resolve(model);
+                 }, (xhr) => {
+                     if (sidebarList.innerHTML.includes('טוען')) { sidebarList.innerHTML = `<div class="text-gray-400">טוען: ${url.split('/').pop()}... ${Math.round(xhr.loaded / xhr.total * 100)}%</div>`; }
+                 }, (error) => {
+                     console.error(`Error loading ${url}:`, error);
+                     reject(error);
+                 });
+             });
+         }
+
+
+        // --- UI Population ---
+        function populateSidebar() { sidebarList.innerHTML = ''; const objectsToList = sceneObjects.filter(obj => !obj.isLightHelper); if (objectsToList.length === 0) { sidebarList.innerHTML = '<div class="text-gray-400 text-sm">אין אובייקטים להצגה.</div>'; return; } objectsToList.forEach(obj => { const objElement = document.createElement('div'); objElement.id = `sidebar-item-${obj.id}`; objElement.className = 'p-3 bg-gray-700 rounded-lg shadow cursor-pointer hover:bg-gray-600 object-item'; objElement.dataset.objectId = obj.id; objElement.innerHTML = ` <h3 class="font-semibold text-lg text-white pointer-events-none">${obj.name}</h3> <p class="text-sm text-gray-400 pointer-events-none">ID: ...${obj.id.slice(-6)}</p> `; if (selectedObjects.includes(obj)) { objElement.classList.add('selected-object'); } sidebarList.appendChild(objElement); }); }
+        function populateLightList() { lightListContainer.innerHTML = ''; const lightsToList = sceneObjects.filter(obj => obj.isLightHelper && obj.lightType === 'point'); if (lightsToList.length === 0) { lightListContainer.innerHTML = '<div class="text-gray-400 text-sm">אין מנורות נקודתיות להצגה.</div>'; return; } lightsToList.forEach(obj => { const lightElement = document.createElement('div'); lightElement.id = `light-item-${obj.id}`; lightElement.className = 'p-3 bg-gray-600 rounded-lg shadow cursor-pointer hover:bg-gray-500 light-item'; lightElement.dataset.objectId = obj.id; lightElement.innerHTML = ` <h3 class="font-semibold text-base text-white pointer-events-none">${obj.name.replace(' (Helper)', '')}</h3> <p class="text-xs text-gray-300 pointer-events-none">ID: ...${obj.id.slice(-6)}</p> `; if (selectedObjects.includes(obj)) { lightElement.classList.add('selected-object'); } lightListContainer.appendChild(lightElement); }); }
+
+        // --- Panel Management ---
+        function openPanel(panelToOpen) { allPanels.forEach(panel => { if (panel === panelToOpen) { panel.classList.remove('hidden'); } else { if (panel !== singleObjectPanel && panel !== pointLightPanel) { panel.classList.add('hidden'); } } }); if (!panelToOpen.style.left && !panelToOpen.style.top) { // Check if position needs reset
+             // Determine default side based on panel ID
+             if (panelToOpen === singleObjectPanel || panelToOpen === pointLightPanel) {
+                panelToOpen.style.left = '1.25rem'; // Default left
+                panelToOpen.style.right = 'auto';
+             } else {
+                panelToOpen.style.right = '1.25rem'; // Default right for other panels
+                panelToOpen.style.left = 'auto';
+             }
+             panelToOpen.style.transform = panelToOpen.id.includes('single') || panelToOpen.id.includes('point-light') ? 'translateY(-50%)' : '';
+             panelToOpen.style.top = panelToOpen.id.includes('single') || panelToOpen.id.includes('point-light') ? '50%' : '5rem';
+        }}
+        function closeSinglePanels() { singleObjectPanel.classList.add('hidden'); pointLightPanel.classList.add('hidden'); }
+
+        // --- Lighting & Effects Controls ---
+        function onHdrLoad(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { const dataUrl = e.target.result; scene.userData.hdriDataUrl = dataUrl; rgbeLoader.load(dataUrl, (texture) => { texture.mapping = THREE.EquirectangularReflectionMapping; scene.environment = texture; console.log("HDRI loaded as environment."); }, undefined, (err) => { console.error("Error loading HDRI:", err); delete scene.userData.hdriDataUrl; }); }; reader.readAsDataURL(file); event.target.value = null; }
+        function onClearHdr() { scene.environment = null; scene.userData.hdriDataUrl = null; console.log("HDRI environment cleared."); }
+        function onBloomChange() { bloomPass.threshold = parseFloat(bloomThresholdSlider.value); bloomPass.strength = parseFloat(bloomStrengthSlider.value); bloomPass.radius = parseFloat(bloomRadiusSlider.value); }
+        function onBokehChange() { bokehPass.uniforms['focus'].value = parseFloat(bokehFocusSlider.value); bokehPass.uniforms['aperture'].value = parseFloat(bokehApertureSlider.value) * 1e-5; bokehPass.uniforms['maxblur'].value = parseFloat(bokehMaxblurSlider.value); }
+
+        // --- UI Interaction Handlers ---
+        function onSidebarClick(event) { const item = event.target.closest('.object-item'); if (!item) return; const objectId = item.dataset.objectId; const targetObject = sceneObjects.find(obj => obj.id === objectId); if (targetObject) { selectObject(targetObject, event); zoomToSelected(); } }
+        function onLightListClick(event) { const item = event.target.closest('.light-item'); if (!item) return; const objectId = item.dataset.objectId; const targetObject = sceneObjects.find(obj => obj.id === objectId); if (targetObject) { selectObject(targetObject, event); zoomToSelected(); } }
+        
+        function onSinglePanelClick(event) {
+            event.stopPropagation();
+            const objectId = event.target.dataset.objectId;
+            if (!objectId) return;
+            const targetObject = selectedObjects.length > 0 ? selectedObjects.find(obj => obj.id === objectId) : null; // Check if the clicked element's object is selected
+            if (!targetObject) return; // Only act if the object is selected
+
+            if (event.target.classList.contains('revert-btn')) {
+                revertToDefault(targetObject);
+                showSingleObjectPanel(targetObject); // Refresh panel
+            }
+            if (event.target.classList.contains('duplicate-btn')) {
+                // Check lock status before duplicating
+                if (!targetObject.isLightHelper && targetObject.mesh.userData.isLocked) {
+                    console.warn("Cannot duplicate locked model.");
+                    return;
+                }
+               if (targetObject.isLightHelper) {
+                   duplicateLight(targetObject);
+               } else {
+                   duplicateModel(objectId);
+               }
+            }
+        }
+        function onSinglePanelChange(event) { event.stopPropagation(); const objectId = event.target.dataset.objectId; if (!objectId) return; const targetObject = selectedObjects.length > 0 ? selectedObjects.find(obj => obj.id === objectId) : null; if (!targetObject) return; if (event.target.classList.contains('texture-upload-input')) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (e) => await applyTextureFromDataUrl(targetObject, e.target.result); reader.readAsDataURL(file); event.target.value = null; return; } if (event.target.classList.contains('bump-upload-input')) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (e) => await applyBumpMapFromDataUrl(targetObject, e.target.result); reader.readAsDataURL(file); event.target.value = null; return; } const materialToChange = getMaterialToChange(targetObject.mesh); if (!materialToChange) return; let propertyName = null, newValue = null, beforeValue = null; const firstMat = Array.isArray(materialToChange) ? materialToChange[0] : materialToChange; if (event.target.classList.contains('color-picker')) { propertyName = 'color'; newValue = event.target.value; beforeValue = '#' + firstMat.color.getHexString(); } else if (event.target.classList.contains('roughness-slider')) { propertyName = 'roughness'; newValue = parseFloat(event.target.value); beforeValue = firstMat.roughness; } else if (event.target.classList.contains('metalness-slider')) { propertyName = 'metalness'; newValue = parseFloat(event.target.value); beforeValue = firstMat.metalness; } if (propertyName && newValue !== beforeValue && event.type === 'change') { addHistory({ type: 'material', mesh: targetObject.mesh, property: propertyName, before: beforeValue, after: newValue }); } const applyToMaterial = (mat) => { if (event.target.classList.contains('color-picker')) { mat.color.set(event.target.value); mat.map = null; mat.userData.textureDataUrl = null; } if (event.target.classList.contains('roughness-slider')) mat.roughness = parseFloat(event.target.value); if (event.target.classList.contains('metalness-slider')) mat.metalness = parseFloat(event.target.value); mat.needsUpdate = true; }; if (Array.isArray(materialToChange)) materialToChange.forEach(applyToMaterial); else applyToMaterial(materialToChange); }
+        function onPointLightPanelClick(event) { event.stopPropagation(); if (event.target.classList.contains('duplicate-btn')) { const lastSelected = selectedObjects.length > 0 ? selectedObjects[selectedObjects.length - 1] : null; if (lastSelected && lastSelected.isLightHelper) { duplicateLight(lastSelected); } } }
+        function onPointLightPanelChange(event) { const lastSelected = selectedObjects.length > 0 ? selectedObjects[selectedObjects.length - 1] : null; if (!lastSelected || !lastSelected.isLightHelper || lastSelected.lightType !== 'point') return; const light = lightHelpersMap.get(lastSelected.mesh); if (!light) return; const target = event.target; let property, value, beforeValue; let isShadowProperty = false; if (target.id === 'pl-intensity-slider') { property = 'intensity'; value = parseFloat(target.value); beforeValue = light.intensity; plIntensityValueSpan.textContent = value.toFixed(1); } else if (target.id === 'pl-distance-slider') { property = 'distance'; value = parseFloat(target.value); beforeValue = light.distance; plDistanceValueSpan.textContent = value.toFixed(1); } else if (target.id === 'pl-color-picker') { property = 'color'; value = target.value; beforeValue = '#' + light.color.getHexString(); } else if (target.id === 'pl-cast-shadow-checkbox') { property = 'castShadow'; value = target.checked; beforeValue = light.castShadow; isShadowProperty = true; } else if (target.id === 'pl-shadow-bias-slider') { property = 'bias'; value = parseFloat(target.value); beforeValue = light.shadow.bias; isShadowProperty = true; } else if (target.id === 'pl-shadow-normal-bias-slider') { property = 'normalBias'; value = parseFloat(target.value); beforeValue = light.shadow.normalBias; isShadowProperty = true; } if (property !== undefined && value !== beforeValue) { const isFinalChange = event.type === 'change'; if (property === 'castShadow' && value === true) { const currentShadowCasters = pointLights.filter(pl => pl.light.castShadow).length; const countExcludingCurrent = pointLights.filter(pl => pl.light.castShadow && pl.light !== light).length; if (countExcludingCurrent >= MAX_SHADOW_CASTING_POINT_LIGHTS) { console.warn(`מגבלת מנורות מטילות צל (${MAX_SHADOW_CASTING_POINT_LIGHTS}) הושגה. לא ניתן להפעיל צל למנורה זו.`); target.checked = false; plCastShadowCheckbox.disabled = true; setTimeout(() => plCastShadowCheckbox.disabled = false, 100); return; } } if (isFinalChange) { addHistory({ type: 'lightProperty', light: light, property: property, isShadowProperty: isShadowProperty, before: beforeValue, after: value }); } if (property === 'color') { light.color.set(value); const helper = lastSelected.mesh; if (helper && helper.material) helper.material.color.set(value); } else if (isShadowProperty) { if (light.shadow.map) { light.shadow.map.dispose(); light.shadow.map = null; } light.shadow[property] = value; if(property === 'castShadow') light.castShadow = value; } else { light[property] = value; } if (property === 'distance') updateRangeIndicator(); } }
+        function onDoubleClick(event) { event.stopPropagation(); const rect = renderer.domElement.getBoundingClientRect(); mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1; mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1; raycaster.setFromCamera(mouse, camera); const intersectableObjects = sceneObjects.map(obj => obj.mesh); const intersects = raycaster.intersectObjects(intersectableObjects, false); if (intersects.length > 0) { let intersectedSceneObject = null; for (const intersect of intersects) { intersectedSceneObject = sceneObjects.find(obj => obj.mesh === intersect.object); if (intersectedSceneObject) break; } if (intersectedSceneObject) { deselectObject(); selectObject(intersectedSceneObject, event); const distance = intersects[0].distance; bokehPass.uniforms['focus'].value = distance; bokehFocusSlider.value = distance; } } else { deselectObject(); closeSinglePanels(); } }
+
+
+        // --- Selection and UI Update ---
+        function showSingleObjectPanelBasedOnSelection() { closeSinglePanels(); if (selectedObjects.length === 1) { const lastSelected = selectedObjects[0]; if (lastSelected) { showSingleObjectPanel(lastSelected); } } }
+        function showSingleObjectPanel(obj) { closeSinglePanels(); const titleEl = document.getElementById('single-object-title-static'); titleEl.textContent = obj.name; if (obj.isLightHelper) { if(obj.lightType === 'point') { const light = lightHelpersMap.get(obj.mesh); if (light) { const plTitle = document.getElementById('point-light-title'); plTitle.textContent = obj.name.replace(' (Helper)', ''); plIntensitySlider.value = light.intensity; plDistanceSlider.value = light.distance; plIntensityValueSpan.textContent = light.intensity.toFixed(1); plDistanceValueSpan.textContent = light.distance.toFixed(1); plColorPicker.value = '#' + light.color.getHexString(); plCastShadowCheckbox.checked = light.castShadow; plShadowBiasSlider.value = light.shadow.bias; plShadowNormalBiasSlider.value = light.shadow.normalBias; const currentShadowCasters = pointLights.filter(pl => pl.light.castShadow).length; const canEnableShadow = light.castShadow || currentShadowCasters < MAX_SHADOW_CASTING_POINT_LIGHTS; plCastShadowCheckbox.disabled = !canEnableShadow; pointLightPanel.querySelector('.duplicate-btn').dataset.objectId = obj.id; openPanel(pointLightPanel);
+                 } } } else { const controlsContainer = document.getElementById('single-object-controls'); let currentMaterial = getMaterialToChange(obj.mesh); if (Array.isArray(currentMaterial)) currentMaterial = currentMaterial[0]; const startColor = currentMaterial ? currentMaterial.color.getHexString() : 'ffffff'; const startRoughness = currentMaterial ? currentMaterial.roughness : 1; const startMetalness = currentMaterial ? currentMaterial.metalness : 0; const hasBump = currentMaterial && currentMaterial.bumpMap; controlsContainer.innerHTML = ` <div class="space-y-4"> <button class="revert-btn w-full px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 rounded text-white transition-colors" data-object-id="${obj.id}">שחזר חומר לברירת מחדל</button> <button class="duplicate-btn w-full px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors" data-object-id="${obj.id}" ${obj.mesh.userData.isLocked ? 'disabled' : ''}>שכפל מודל</button> <hr class="border-gray-600"> <h4 class="font-semibold text-gray-200">בקרת חומרים</h4> <div><label for="color-${obj.id}" class="text-sm text-gray-300">צבע בסיס</label><input type="color" class="material-control color-picker w-full h-10 p-1 bg-gray-700 border border-gray-600 rounded cursor-pointer" id="color-${obj.id}" data-object-id="${obj.id}" value="#${startColor}"></div> <div><label for="roughness-${obj.id}" class="text-sm text-gray-300">חספוס (ברק: 0 = מבריק, 1 = מט)</label><input type="range" class="material-control roughness-slider w-full" id="roughness-${obj.id}" data-object-id="${obj.id}" min="0" max="1" step="0.01" value="${startRoughness}"></div> <div><label for="metalness-${obj.id}" class="text-sm text-gray-300">מתכתיות</label><input type="range" class="material-control metalness-slider w-full" id="metalness-${obj.id}" data-object-id="${obj.id}" min="0" max="1" step="0.01" value="${startMetalness}"></div> <hr class="border-gray-600"> <div><label for="upload-single-${obj.id}" class="text-sm text-gray-300">טקסטורת צבע (Diffuse)</label><input type="file" class="texture-upload-input" id="upload-single-${obj.id}" data-object-id="${obj.id}" accept="image/*"></div> <div><label for="bump-upload-${obj.id}" class="text-sm text-gray-300">טקסטורת בליטות (Bump) ${hasBump ? '<span class="text-green-400">(טעון)</span>' : ''}</label><input type="file" class="bump-upload-input" id="bump-upload-${obj.id}" data-object-id="${obj.id}" accept="image/*"></div> </div>`; openPanel(singleObjectPanel);
+        } }
+        function selectObject(sceneObjectData, event) {
+             const isCtrlClick = event.ctrlKey || event.metaKey;
+             const isSelected = selectedObjects.includes(sceneObjectData);
+
+             if (isCtrlClick) {
+                 if (isSelected) { selectedObjects = selectedObjects.filter(obj => obj !== sceneObjectData); }
+                 else { selectedObjects.push(sceneObjectData); }
+             } else {
+                 if (!(selectedObjects.length === 1 && isSelected)) {
+                     deselectObject();
+                     selectedObjects = [sceneObjectData];
+                 }
+             }
+
+            updateSelectionHighlight();
+
+            if (selectedObjects.length > 0) {
+                 const lastSelected = selectedObjects[selectedObjects.length - 1];
+                 const objectToAttachTo = lastSelected.parentModel || lastSelected.mesh;
+                 const isLocked = lastSelected.mesh.userData.isLocked;
+
+                if (objectToAttachTo && !isLocked) {
+                     transformControls.attach(objectToAttachTo);
+                 } else {
+                     transformControls.detach();
+                 }
+
+                if (lastSelected.isLightHelper && lastSelected.lightType === 'point') { createOrUpdateRangeIndicator(); }
+                else { removeRangeIndicator(); }
+                 showSingleObjectPanelBasedOnSelection();
+             } else {
+                 deselectObject();
+             }
+        }
+        function deselectObject() { removeRangeIndicator(); selectedObjects = []; transformControls.detach(); updateSelectionHighlight(); closeSinglePanels(); }
+        function updateSelectionHighlight() { document.querySelectorAll('#object-list .object-item').forEach(item => { const objectId = item.dataset.objectId; const sceneObj = sceneObjects.find(obj => obj.id === objectId); item.classList.toggle('selected-object', sceneObj && selectedObjects.includes(sceneObj)); }); document.querySelectorAll('#light-list .light-item').forEach(item => { const objectId = item.dataset.objectId; const sceneObj = sceneObjects.find(obj => obj.id === objectId); item.classList.toggle('selected-object', sceneObj && selectedObjects.includes(sceneObj)); }); }
+
+        // --- Range Indicator ---
+        function createOrUpdateRangeIndicator() { if (selectedObjects.length === 0) return; const lastSelected = selectedObjects[selectedObjects.length - 1]; if (!lastSelected || !lastSelected.isLightHelper || lastSelected.lightType !== 'point') { removeRangeIndicator(); return; } const light = lightHelpersMap.get(lastSelected.mesh); if (!light) return; if (!lightRangeIndicator) { const geometry = new THREE.SphereGeometry(1, 32, 16); const material = new THREE.MeshBasicMaterial({ color: 0xFF8C00, wireframe: true, transparent: true, opacity: 0.3 }); lightRangeIndicator = new THREE.Mesh(geometry, material); scene.add(lightRangeIndicator); } lightRangeIndicator.position.copy(lastSelected.mesh.position); lightRangeIndicator.scale.setScalar(light.distance); lightRangeIndicator.visible = true; }
+        function updateRangeIndicator() { if (selectedObjects.length === 0) return; const lastSelected = selectedObjects[selectedObjects.length - 1]; if (lightRangeIndicator && lastSelected && lastSelected.isLightHelper && lastSelected.lightType === 'point') { const light = lightHelpersMap.get(lastSelected.mesh); if (light) { lightRangeIndicator.position.copy(lastSelected.mesh.position); lightRangeIndicator.scale.setScalar(light.distance); } } }
+        function removeRangeIndicator() { if (lightRangeIndicator) lightRangeIndicator.visible = false; }
+
+        // --- Utility Functions ---
+        function setGizmoMode(mode) { transformControls.setMode(mode); gizmoButtons.forEach(btn => btn.classList.remove('active')); if (mode === 'translate') translateBtn.classList.add('active'); if (mode === 'rotate') rotateBtn.classList.add('active'); if (mode === 'scale') scaleBtn.classList.add('active'); }
+
+        function makeDraggable(panel) {
+            const handle = panel.querySelector('.draggable-handle');
+            if (!handle) return;
+            let isDragging = false, offsetX, offsetY;
+            const topMenuBar = document.getElementById('top-menu-bar');
+
+            handle.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button, input, label, select')) return;
+                e.preventDefault();
+                isDragging = true;
+                const panelRect = panel.getBoundingClientRect();
+                offsetX = e.clientX - panelRect.left;
+                offsetY = e.clientY - panelRect.top;
+                panel.style.right = 'auto'; // Remove fixed right positioning
+                panel.style.transform = ''; // Remove centering transform
+                panel.style.left = `${panelRect.left}px`;
+                panel.style.top = `${panelRect.top}px`;
+                document.body.style.userSelect = 'none'; // Prevent text selection during drag
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            function onMouseMove(e) {
+                if (!isDragging) return;
+                let newX = e.clientX - offsetX;
+                let newY = e.clientY - offsetY;
+                const panelRect = panel.getBoundingClientRect();
+                const menuBarHeight = topMenuBar ? topMenuBar.offsetHeight : 0;
+                const topLimit = menuBarHeight + 10; // Add a small margin below the menu bar
+
+                // Clamp position within viewport and above the menu bar
+                newX = Math.max(0, Math.min(newX, window.innerWidth - panelRect.width));
+                newY = Math.max(topLimit, Math.min(newY, window.innerHeight - panelRect.height));
+
+                panel.style.left = `${newX}px`;
+                panel.style.top = `${newY}px`;
+            }
+
+            function onMouseUp() {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = ''; // Re-enable text selection
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                }
+            }
+        }
+        function getMaterialToChange(mesh) { let material = mesh.material; if (!material) { console.warn("getMaterialToChange: No material found on mesh.", mesh); return null; } if (Array.isArray(material)) material.forEach(mat => { if (!mat.userData) mat.userData = {}; }); else if (!material.userData) material.userData = {}; return material; }
+
+        // --- Material & Texture Application (Async) ---
+        async function applyTextureFromDataUrl(sceneObject, dataUrl, addToHistory = true) { const mesh = sceneObject.mesh; if (!mesh) return; const materialToChange = getMaterialToChange(mesh); if (!materialToChange) return; if (addToHistory) { const firstMat = Array.isArray(materialToChange) ? materialToChange[0] : materialToChange; const beforeValue = firstMat.userData.textureDataUrl || null; if (beforeValue !== dataUrl) addHistory({ type: 'material', mesh: sceneObject.mesh, property: 'map', before: beforeValue, after: dataUrl }); } return new Promise((resolve, reject) => { textureLoader.load(dataUrl, (texture) => { texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(4, 4); texture.colorSpace = THREE.SRGBColorSpace; const dataUrlToSave = dataUrl; const applyToMaterial = (mat) => { mat.map = texture.clone(); if (dataUrl) mat.color.set(0xffffff); mat.userData.textureDataUrl = dataUrlToSave; mat.needsUpdate = true; }; if (Array.isArray(materialToChange)) materialToChange.forEach(applyToMaterial); else applyToMaterial(materialToChange); resolve(); }, undefined, (err) => { console.error('Error loading texture from Data URL:', err); reject(err); }); }); }
+        async function applyBumpMapFromDataUrl(sceneObject, dataUrl, addToHistory = true) { const mesh = sceneObject.mesh; if (!mesh) return; const materialToChange = getMaterialToChange(mesh); if (!materialToChange) return; if (addToHistory) { const firstMat = Array.isArray(materialToChange) ? materialToChange[0] : materialToChange; const beforeValue = firstMat.userData.bumpDataUrl || null; if (beforeValue !== dataUrl) addHistory({ type: 'material', mesh: sceneObject.mesh, property: 'bumpMap', before: beforeValue, after: dataUrl }); } return new Promise((resolve, reject) => { textureLoader.load(dataUrl, (texture) => { texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping; const dataUrlToSave = dataUrl; const applyToMaterial = (mat) => { mat.bumpMap = texture.clone(); mat.bumpScale = 0.05; mat.userData.bumpDataUrl = dataUrlToSave; mat.needsUpdate = true; }; if (Array.isArray(materialToChange)) materialToChange.forEach(applyToMaterial); else applyToMaterial(materialToChange); if (selectedObjects.includes(sceneObject)) showSingleObjectPanelBasedOnSelection(); resolve(); }, undefined, (err) => { console.error('Error loading bump map from Data URL:', err); reject(err); }); }); }
+        function revertToDefault(sceneObject, addToHistory = true) { const mesh = sceneObject.mesh; if (!mesh) return; const materialToChange = getMaterialToChange(mesh); const originalMaterial = sceneObject.originalMaterial; if (!materialToChange || !originalMaterial) return; if (addToHistory) { const firstMat = Array.isArray(materialToChange) ? materialToChange[0] : materialToChange; const beforeState = { color: '#' + firstMat.color.getHexString(), roughness: firstMat.roughness, metalness: firstMat.metalness, map: firstMat.userData.textureDataUrl || null, bumpMap: firstMat.userData.bumpDataUrl || null }; const originalFirstMat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial; const afterState = { color: '#' + originalFirstMat.color.getHexString(), roughness: originalFirstMat.roughness, metalness: originalFirstMat.metalness, map: originalFirstMat.map ? (originalFirstMat.map.image ? originalFirstMat.map.image.src : null) : null, bumpMap: originalFirstMat.bumpMap ? (originalFirstMat.bumpMap.image ? originalFirstMat.bumpMap.image.src : null) : null }; addHistory({ type: 'materialRevert', mesh: sceneObject.mesh, before: beforeState, after: afterState }); } const applyRevert = (matToChange, matOriginal) => { if (!matOriginal) return; matToChange.map = matOriginal.map ? matOriginal.map.clone() : null; matToChange.color.set(matOriginal.color); matToChange.metalness = matOriginal.metalness; matToChange.roughness = matOriginal.roughness; matToChange.userData.textureDataUrl = null; matToChange.bumpMap = matOriginal.bumpMap ? matOriginal.bumpMap.clone() : null; matToChange.bumpScale = matOriginal.bumpScale || 1; matToChange.userData.bumpDataUrl = null; matToChange.needsUpdate = true; }; if (Array.isArray(materialToChange)) { if (Array.isArray(originalMaterial)) for(let i = 0; i < materialToChange.length; i++) applyRevert(materialToChange[i], originalMaterial[i]); } else { const mat = Array.isArray(originalMaterial) ? originalMaterial[0] : originalMaterial; applyRevert(materialToChange, mat); } }
+
+        // --- Duplication & Deletion ---
+        function duplicateModel(objectId, addToHistory = true) {
+            const targetObject = sceneObjects.find(obj => obj.id === objectId);
+            // מניעת שכפול אם המודל נעול
+            if (!targetObject || !targetObject.parentModel || targetObject.mesh.userData.isLocked) {
+                 console.warn("Cannot duplicate locked model or invalid object ID.");
+                 return; // יציאה מהפונקציה אם נעול
+            }
+            const originalModel = targetObject.parentModel;
+            const newModel = originalModel.clone();
+            newModel.position.add(new THREE.Vector3(1, 0, 1));
+            newModel.userData.url = originalModel.userData.url;
+            newModel.userData.initialOptions = originalModel.userData.initialOptions;
+            newModel.userData.transform = { position: newModel.position.clone(), rotation: newModel.rotation.clone(), scale: newModel.scale.clone() };
+            newModel.userData.isLocked = originalModel.userData.isLocked;
+            const newSceneObjects = [];
+            newModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.userData.isLocked = newModel.userData.isLocked;
+                    let originalChild = null;
+                    originalModel.traverse(orig => { if (orig.isMesh && orig.userData.stableId === child.userData.stableId) originalChild = orig; });
+                     if (!originalChild) originalModel.traverse(orig => { if (orig.isMesh && orig.name === child.name) originalChild = orig; }); if (!originalChild) originalModel.traverse(orig => { if (orig.isMesh && orig.material.uuid === child.material.uuid) originalChild = orig; });
+                    const originalSceneObject = sceneObjects.find(obj => obj.mesh === originalChild);
+                    let originalMaterialToClone = originalSceneObject ? getMaterialToChange(originalSceneObject.mesh) : child.material;
+                    let newMaterial = Array.isArray(originalMaterialToClone) ? originalMaterialToClone.map(mat => mat.clone()) : originalMaterialToClone.clone();
+                    child.material = newMaterial;
+                    child.userData.stableId = originalSceneObject ? originalSceneObject.stableId : child.uuid;
+                    const newSceneObject = {
+                        id: child.uuid, stableId: child.userData.stableId, name: originalSceneObject ? `${originalSceneObject.name} (עותק)` : `חלק_${globalObjectCounter++}`,
+                        mesh: child,
+                        originalMaterial: originalSceneObject ? (Array.isArray(originalSceneObject.originalMaterial) ? originalSceneObject.originalMaterial.map(m => m.clone()) : originalSceneObject.originalMaterial.clone()) : (Array.isArray(child.material) ? child.material.map(m => m.clone()) : child.material.clone()),
+                        parentModel: newModel
+                    };
+                    sceneObjects.push(newSceneObject);
+                    newSceneObjects.push(newSceneObject);
+                }
+            });
+            scene.add(newModel);
+            if (addToHistory) addHistory({ type: 'duplicate', newModel: newModel, newSceneObjects: newSceneObjects });
+            populateSidebar();
+        }
+        function duplicateLight(lightHelperObject, addToHistory = true) { const originalLight = lightHelpersMap.get(lightHelperObject.mesh); if (!originalLight) return; const newPosition = lightHelperObject.mesh.position.clone().add(new THREE.Vector3(1, 0, 1)); let newLightData; if (lightHelperObject.lightType === 'point') newLightData = createPointLight(newPosition, originalLight.intensity, originalLight.distance, originalLight.color, originalLight.castShadow, originalLight.shadow.bias, originalLight.shadow.normalBias); if (newLightData && addToHistory) addHistory({ type: 'duplicateLight', lightType: lightHelperObject.lightType, newLight: newLightData.light, newHelper: newLightData.helper, newSceneObjectData: newLightData.data }); }
+        function deleteSelected(addToHistory = true) { if (selectedObjects.length === 0) return; const deletedModels = []; const deletedSceneObjectsGroups = []; const deletedLights = []; const deletedHelpers = []; const deletedLightSceneObjects = []; [...selectedObjects].forEach(objectToDeleteData => { if (objectToDeleteData.isLightHelper) { const light = lightHelpersMap.get(objectToDeleteData.mesh); if (light) { deletedLights.push(light); deletedHelpers.push(objectToDeleteData.mesh); deletedLightSceneObjects.push(objectToDeleteData); scene.remove(light); scene.remove(objectToDeleteData.mesh); lightHelpersMap.delete(objectToDeleteData.mesh); sceneObjects = sceneObjects.filter(obj => obj !== objectToDeleteData); if(objectToDeleteData.lightType === 'point') pointLights = pointLights.filter(pl => pl.helper !== objectToDeleteData.mesh); } } else { const parentModel = objectToDeleteData.parentModel; if (parentModel && !deletedModels.includes(parentModel) && !parentModel.userData.isLocked) { deletedModels.push(parentModel); const objectsInModel = sceneObjects.filter(obj => obj.parentModel === parentModel); deletedSceneObjectsGroups.push(objectsInModel); scene.remove(parentModel); sceneObjects = sceneObjects.filter(obj => obj.parentModel !== parentModel); } else if (parentModel && parentModel.userData.isLocked) { console.warn("Cannot delete locked model:", parentModel.name || parentModel.uuid); } } }); if (addToHistory && (deletedModels.length > 0 || deletedLights.length > 0)) { addHistory({ type: 'deleteMultiple', deletedModels, deletedSceneObjectsGroups, deletedLights, deletedHelpers, deletedLightSceneObjects }); } deselectObject(); populateSidebar(); populateLightList(); }
+
+        // --- Keyboard Shortcuts ---
+        function onKeyDown(event) { const activeEl = document.activeElement; if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) return; if (event.ctrlKey || event.metaKey) { if (event.key.toLowerCase() === 'z') { event.preventDefault(); undo(); } else if (event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); } return; } switch (event.key.toLowerCase()) { case 'z': case 'ז': event.preventDefault(); zoomToSelected(); break; case 'w': case '׳': event.preventDefault(); setGizmoMode('translate'); break; case 'e': case 'ק': event.preventDefault(); setGizmoMode('rotate'); break; case 'r': case 'ר': event.preventDefault(); setGizmoMode('scale'); break; case 'delete': case 'backspace': event.preventDefault(); deleteSelected(); break; } }
+
+        // --- Zoom Function ---
+        function zoomToSelected() { if (selectedObjects.length === 0) return; const box = new THREE.Box3(); selectedObjects.forEach(selectedObj => { const objectToMeasure = selectedObj.parentModel || selectedObj.mesh; if (objectToMeasure) { box.expandByObject(objectToMeasure); } }); if (box.isEmpty()) return; const targetLookAt = box.getCenter(new THREE.Vector3()); const size = box.getSize(new THREE.Vector3()); const maxDim = Math.max(size.x, size.y, size.z); const distance = Math.max(maxDim * 2.5, 5); const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize(); const targetPosition = new THREE.Vector3().addVectors(targetLookAt, direction.multiplyScalar(distance)); const duration = 500; new TWEEN.Tween(camera.position).to(targetPosition, duration).easing(TWEEN.Easing.Quadratic.Out).start(); new TWEEN.Tween(controls.target).to(targetLookAt, duration).easing(TWEEN.Easing.Quadratic.Out).start(); }
+
+        // --- History Management ---
+        function addHistory(action) { history = history.slice(0, historyIndex + 1); history.push(action); if (history.length > MAX_HISTORY) history.shift(); historyIndex = history.length - 1; updateHistoryButtons(); }
+        function updateHistoryButtons() { undoBtn.disabled = historyIndex < 0; redoBtn.disabled = historyIndex >= history.length - 1; }
+        function undo() { if (historyIndex < 0) return; const action = history[historyIndex]; applyAction(action, 'before'); historyIndex--; updateHistoryButtons(); }
+        function redo() { if (historyIndex >= history.length - 1) return; historyIndex++; const action = history[historyIndex]; applyAction(action, 'after'); updateHistoryButtons(); }
+        function applyAction(action, state) { const data = action[state]; switch(action.type) { case 'transform': { const obj = action.object; obj.position.copy(data.position); obj.rotation.copy(data.rotation); obj.scale.copy(data.scale); if(obj.userData.transform) { obj.userData.transform.position.copy(data.position); obj.userData.transform.rotation.copy(data.rotation); obj.userData.transform.scale.copy(data.scale); } const actualLight = lightHelpersMap.get(obj); if (actualLight) { actualLight.position.copy(obj.position); updateRangeIndicator(); } break; } case 'material': { const material = getMaterialToChange(action.mesh); const sceneObject = sceneObjects.find(obj => obj.mesh === action.mesh); const applyToMat = (mat) => { switch(action.property) { case 'color': mat.color.set(data); mat.map = null; mat.userData.textureDataUrl = null; break; case 'roughness': mat.roughness = data; break; case 'metalness': mat.metalness = data; break; case 'map': if (data) applyTextureFromDataUrl(sceneObject, data, false); else { mat.map = null; mat.userData.textureDataUrl = null; } break; case 'bumpMap': if (data) applyBumpMapFromDataUrl(sceneObject, data, false); else { mat.bumpMap = null; mat.userData.bumpDataUrl = null; } break; } mat.needsUpdate = true; }; if (Array.isArray(material)) material.forEach(applyToMat); else applyToMat(material); if (selectedObjects.includes(sceneObject)) showSingleObjectPanelBasedOnSelection(); break; } case 'materialRevert': { const material = getMaterialToChange(action.mesh); const sceneObject = sceneObjects.find(obj => obj.mesh === action.mesh); const applyToMat = (mat) => { mat.color.set(data.color); mat.roughness = data.roughness; mat.metalness = data.metalness; mat.needsUpdate = true; }; if (Array.isArray(material)) material.forEach(applyToMat); else applyToMat(material); if (data.map) applyTextureFromDataUrl(sceneObject, data.map, false); else { if (Array.isArray(material)) material.forEach(m => { m.map = null; m.userData.textureDataUrl = null; }); else { material.map = null; material.userData.textureDataUrl = null; } } if (data.bumpMap) applyBumpMapFromDataUrl(sceneObject, data.bumpMap, false); else { if (Array.isArray(material)) material.forEach(m => { m.bumpMap = null; m.userData.bumpDataUrl = null; }); else { material.bumpMap = null; material.userData.bumpDataUrl = null; } } if (selectedObjects.includes(sceneObject)) showSingleObjectPanelBasedOnSelection(); break; } case 'duplicate': { if (state === 'after') { scene.add(action.newModel); sceneObjects.push(...action.newSceneObjects); } else { scene.remove(action.newModel); sceneObjects = sceneObjects.filter(obj => !action.newSceneObjects.includes(obj)); } populateSidebar(); break; } case 'duplicateLight': { if (state === 'after') { scene.add(action.newLight); scene.add(action.newHelper); lightHelpersMap.set(action.newHelper, action.newLight); sceneObjects.push(action.newSceneObjectData); if(action.lightType === 'point') pointLights.push({ light: action.newLight, helper: action.newHelper, data: action.newSceneObjectData }); } else { scene.remove(action.newLight); scene.remove(action.newHelper); lightHelpersMap.delete(action.newHelper); sceneObjects = sceneObjects.filter(obj => obj !== action.newSceneObjectData); if(action.lightType === 'point') pointLights = pointLights.filter(pl => pl.helper !== action.newHelper); } populateLightList(); break; } case 'lightProperty': { const light = action.light; if (action.property === 'color') { light.color.set(data); const helper = pointLights.find(pl => pl.light === light)?.helper; if (helper && helper.material) helper.material.color.set(data); } else if (action.isShadowProperty) { if (light.shadow.map) { light.shadow.map.dispose(); light.shadow.map = null; } light.shadow[action.property] = data; if(action.property === 'castShadow') light.castShadow = data; } else { light[property] = data; } const lastSelected = selectedObjects.length > 0 ? selectedObjects[selectedObjects.length - 1] : null; if (lastSelected && lightHelpersMap.get(lastSelected.mesh) === light) { if (action.property === 'intensity') { plIntensitySlider.value = data; plIntensityValueSpan.textContent = data.toFixed(1); } else if (action.property === 'distance') { plDistanceSlider.value = data; plDistanceValueSpan.textContent = data.toFixed(1); updateRangeIndicator(); } else if (action.property === 'color') { plColorPicker.value = data; } else if (action.property === 'castShadow') { plCastShadowCheckbox.checked = data; } else if (action.property === 'bias') { plShadowBiasSlider.value = data; } else if (action.property === 'normalBias') { plShadowNormalBiasSlider.value = data; } } break; } case 'deleteMultiple': { if (state === 'after') { action.deletedModels.forEach(model => scene.remove(model)); action.deletedLights.forEach(light => scene.remove(light)); action.deletedHelpers.forEach(helper => { scene.remove(helper); lightHelpersMap.delete(helper); }); sceneObjects = sceneObjects.filter(obj => !action.deletedSceneObjectsGroups.flat().includes(obj) && !action.deletedLightSceneObjects.includes(obj)); pointLights = pointLights.filter(pl => !action.deletedHelpers.includes(pl.helper)); deselectObject(); } else { action.deletedModels.forEach(model => scene.add(model)); action.deletedLights.forEach(light => scene.add(light)); action.deletedHelpers.forEach((helper, index) => { scene.add(helper); lightHelpersMap.set(helper, action.deletedLights[index]); }); sceneObjects.push(...action.deletedSceneObjectsGroups.flat()); sceneObjects.push(...action.deletedLightSceneObjects); action.deletedLightSceneObjects.forEach((lightSceneObj, index) => { if(lightSceneObj.lightType === 'point') { pointLights.push({ light: action.deletedLights[index], helper: action.deletedHelpers[index], data: lightSceneObj }); } }); } populateSidebar(); populateLightList(); break; } case 'addLight': { if (state === 'after') { scene.add(action.addedLight); scene.add(action.addedHelper); lightHelpersMap.set(action.addedHelper, action.addedLight); sceneObjects.push(action.addedSceneObjectData); if (action.lightType === 'point') pointLights.push({ light: action.addedLight, helper: action.addedHelper, data: action.addedSceneObjectData }); } else { scene.remove(action.addedLight); scene.remove(action.addedHelper); lightHelpersMap.delete(action.addedHelper); sceneObjects = sceneObjects.filter(obj => obj !== action.addedSceneObjectData); if (action.lightType === 'point') pointLights = pointLights.filter(pl => pl.helper !== action.addedHelper); } populateLightList(); break; } } }
+
+        // --- Save & Load ---
+        function saveScene() { const sceneConfig = { pointLights: pointLights.map(pl => ({ intensity: pl.light.intensity, distance: pl.light.distance, position: pl.light.position.toArray(), color: '#' + pl.light.color.getHexString(), castShadow: pl.light.castShadow, shadowBias: pl.light.shadow.bias, shadowNormalBias: pl.light.shadow.normalBias })), effects: { bloom: { strength: bloomPass.strength, radius: bloomPass.radius, threshold: bloomPass.threshold }, bokeh: { focus: bokehPass.uniforms['focus'].value, aperture: bokehPass.uniforms['aperture'].value / 1e-5, maxblur: bokehPass.uniforms['maxblur'].value } }, hdriDataUrl: scene.userData.hdriDataUrl || null }; const models = []; const processedModels = new Set(); sceneObjects.forEach(obj => { if (!obj.parentModel || obj.isLightHelper) return; if (processedModels.has(obj.parentModel.uuid)) return; const parentModel = obj.parentModel; const transformData = parentModel.userData.transform || { position: parentModel.position, rotation: parentModel.rotation, scale: parentModel.scale }; const modelData = { url: parentModel.userData.url, transform: { position: transformData.position.toArray(), rotation: [transformData.rotation.x, transformData.rotation.y, transformData.rotation.z], scale: transformData.scale.toArray() }, materials: {} }; const childMeshes = sceneObjects.filter(o => o.parentModel === parentModel); childMeshes.forEach(childObj => { const material = getMaterialToChange(childObj.mesh); const firstMat = Array.isArray(material) ? material[0] : material; if (firstMat) modelData.materials[childObj.stableId] = { textureDataUrl: firstMat.userData.textureDataUrl || null, bumpDataUrl: firstMat.userData.bumpDataUrl || null, color: firstMat.color.getHexString(), roughness: firstMat.roughness, metalness: firstMat.metalness }; }); models.push(modelData); processedModels.add(parentModel.uuid); }); const finalData = { sceneConfig, models }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalData)); const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", "scene_state.json"); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove(); }
+        async function loadScene(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (e) => { try { const finalData = JSON.parse(e.target.result); history = []; historyIndex = -1; updateHistoryButtons(); pointLights.forEach(pl => { scene.remove(pl.light); scene.remove(pl.helper); lightHelpersMap.delete(pl.helper); }); pointLights = []; sceneObjects = sceneObjects.filter(obj => !obj.isLightHelper); const config = finalData.sceneConfig; if (config) { if (config.pointLights && Array.isArray(config.pointLights)) { config.pointLights.forEach(plData => { const color = plData.color ? plData.color : 0xffffff; const castShadow = plData.castShadow !== undefined ? plData.castShadow : true; const shadowBias = plData.shadowBias !== undefined ? plData.shadowBias : -0.0005; const shadowNormalBias = plData.shadowNormalBias !== undefined ? plData.shadowNormalBias : 0.05; createPointLight( new THREE.Vector3().fromArray(plData.position), plData.intensity, plData.distance, color, castShadow, shadowBias, shadowNormalBias); });
+            } else { if(pointLights.length === 0) createPointLight(new THREE.Vector3(0, 5, 0), 50, 20, 0xffffff); } if (config.effects) { if (config.effects.bloom) { bloomPass.strength = config.effects.bloom.strength; bloomPass.radius = config.effects.bloom.radius; bloomPass.threshold = config.effects.bloom.threshold; bloomStrengthSlider.value = config.effects.bloom.strength; bloomRadiusSlider.value = config.effects.bloom.radius; bloomThresholdSlider.value = config.effects.bloom.threshold; } if (config.effects.bokeh) { bokehPass.uniforms['focus'].value = config.effects.bokeh.focus; bokehPass.uniforms['aperture'].value = config.effects.bokeh.aperture * 1e-5; bokehPass.uniforms['maxblur'].value = config.effects.bokeh.maxblur; bokehFocusSlider.value = config.effects.bokeh.focus; bokehApertureSlider.value = config.effects.bokeh.aperture; bokehMaxblurSlider.value = config.effects.bokeh.maxblur; } } if (config.hdriDataUrl) { rgbeLoader.load(config.hdriDataUrl, (texture) => { texture.mapping = THREE.EquirectangularReflectionMapping; scene.environment = texture; scene.userData.hdriDataUrl = config.hdriDataUrl; }); } else { scene.environment = null; scene.userData.hdriDataUrl = null; } } else { if(pointLights.length === 0) createPointLight(new THREE.Vector3(0, 5, 0), 50, 20, 0xffffff); } await loadAllModels(finalData.models || []); } catch (err) { console.error("Error loading JSON file:", err); alert("Error: Invalid scene file."); } }; reader.readAsText(file); event.target.value = null; }
+
+        // --- Rendering Loop & Resize ---
+        function onWindowResize() { const width = sceneContainer.clientWidth; const height = sceneContainer.clientHeight; camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height); composer.setSize(width, height); }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+            controls.update();
+
+            // הגבלת תנועת המצלמה (target)
+            if (controls && knessetBounds) {
+                const target = controls.target;
+                const clampedX = THREE.MathUtils.clamp(target.x, knessetBounds.min.x + boundsPadding, knessetBounds.max.x - boundsPadding);
+                const clampedZ = THREE.MathUtils.clamp(target.z, knessetBounds.min.z + boundsPadding, knessetBounds.max.z - boundsPadding);
+                const clampedY = Math.max(target.y, 0.5); // הגבלת גובה מינימלי למטרה (הרצפה)
+
+                 if (target.x !== clampedX || target.z !== clampedZ || target.y !== clampedY) {
+                     controls.target.set(clampedX, clampedY, clampedZ);
+                 }
+            }
+
+            composer.render();
+        }
+    </script>
+</body>
+</html>
+
