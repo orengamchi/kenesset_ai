@@ -51,41 +51,15 @@
             background-color: #1D4ED8; /* hover:file:bg-blue-700 */
         }
 
-        /* הסתרת סרגלי גלילה בפאנלים (Webkit) */
-        #objects-panel::-webkit-scrollbar,
-        #single-object-controls::-webkit-scrollbar,
-        #lighting-panel::-webkit-scrollbar,
-        #point-light-controls::-webkit-scrollbar,
-        #light-list::-webkit-scrollbar,
-        #effects-panel::-webkit-scrollbar {
-            width: 8px;
+        /* הסתרת סרגלי גלילה (Webkit) - כללי */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
-        #objects-panel::-webkit-scrollbar-track,
-        #single-object-controls::-webkit-scrollbar-track,
-        #lighting-panel::-webkit-scrollbar-track,
-        #point-light-controls::-webkit-scrollbar-track,
-        #light-list::-webkit-scrollbar-track,
-        #effects-panel::-webkit-scrollbar-track {
-            background: #374151; /* bg-gray-700 */
-            border-radius: 4px;
+        .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
-        #objects-panel::-webkit-scrollbar-thumb,
-        #single-object-controls::-webkit-scrollbar-thumb,
-        #lighting-panel::-webkit-scrollbar-thumb,
-        #point-light-controls::-webkit-scrollbar-thumb,
-        #light-list::-webkit-scrollbar-thumb,
-        #effects-panel::-webkit-scrollbar-thumb {
-            background: #4B5563; /* bg-gray-600 */
-            border-radius: 4px;
-        }
-        #objects-panel::-webkit-scrollbar-thumb:hover,
-        #single-object-controls::-webkit-scrollbar-thumb:hover,
-        #lighting-panel::-webkit-scrollbar-thumb:hover,
-        #point-light-controls::-webkit-scrollbar-thumb:hover,
-        #light-list::-webkit-scrollbar-thumb:hover,
-        #effects-panel::-webkit-scrollbar-thumb:hover {
-            background: #6B7280; /* bg-gray-500 */
-        }
+
 
         /* סגנון לכפתורי גיזמו פעילים */
         .gizmo-btn.active {
@@ -117,99 +91,104 @@
 <body class="bg-gray-800">
 
     <!-- סרגל תפריטים עליון -->
-    <div id="top-menu-bar" class="fixed top-0 left-0 right-0 z-50 flex justify-center p-2 space-x-2 bg-gray-800/70 backdrop-blur-sm shadow-lg">
-        <!-- כפתור סצנה (שמור/טען) -->
-        <button id="scene-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="סצנה">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3l-4-4-4 4zM8 7V5c0-1.1.9-2 2-2h4a2 2 0 012 2v2M8 7h8"></path></svg>
-        </button>
-        <!-- כפתור תאורה -->
-        <button id="lighting-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="תאורה">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M12 21v-1m0-16a9 9 0 11-9 9h4.673c.11.02.22.04.33.06A9 9 0 0112 3z"></path></svg>
-        </button>
-        <!-- כפתור אפקטים -->
-        <button id="effects-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="אפקטים">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-        </button>
-        <!-- כפתור הצג/הסתר עזרי תאורה -->
-        <button id="toggle-light-helpers-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition active" title="הצג/הסתר עזרי תאורה">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-        </button>
-        <!-- כפתור אובייקטים -->
-        <button id="objects-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="אובייקטים">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-        </button>
+    <div id="top-menu-bar-wrapper" class="fixed top-0 left-0 right-0 z-50 overflow-x-auto hide-scrollbar bg-gray-800/70 backdrop-blur-sm shadow-lg">
+        <div id="top-menu-bar" class="flex justify-start sm:justify-center p-2 space-x-2 whitespace-nowrap min-w-max sm:min-w-0">
+            <!-- כפתור סצנה (שמור/טען) -->
+            <button id="scene-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="סצנה">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3l-4-4-4 4zM8 7V5c0-1.1.9-2 2-2h4a2 2 0 012 2v2M8 7h8"></path></svg>
+            </button>
+            <!-- כפתור תאורה -->
+            <button id="lighting-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="תאורה">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M12 21v-1m0-16a9 9 0 11-9 9h4.673c.11.02.22.04.33.06A9 9 0 0112 3z"></path></svg>
+            </button>
+            <!-- כפתור הצג/הסתר עזרי תאורה -->
+            <button id="toggle-light-helpers-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition active flex-shrink-0" title="הצג/הסתר עזרי תאורה">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            </button>
+            <!-- כפתור אובייקטים -->
+            <button id="objects-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="אובייקטים">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            </button>
+             <!-- [נמחק] כפתור אפקטים -->
 
-        <!-- קו הפרדה -->
-        <div class="border-l border-gray-600 h-10 my-auto mx-2"></div>
+            <!-- קו הפרדה -->
+            <div class="border-l border-gray-600 h-10 my-auto mx-2 flex-shrink-0"></div>
 
-        <!-- כפתורי היסטוריה -->
-        <button id="undo-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="בטל (Ctrl+Z)" disabled>
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        </button>
-        <button id="redo-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition" title="בצע שוב (Ctrl+Y)" disabled>
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-        </button>
+            <!-- כפתורי היסטוריה -->
+            <button id="undo-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="בטל (Ctrl+Z)" disabled>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </button>
+            <button id="redo-btn" class="p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="בצע שוב (Ctrl+Y)" disabled>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
 
-        <!-- קו הפרדה -->
-        <div class="border-l border-gray-600 h-10 my-auto mx-2"></div>
+            <!-- קו הפרדה -->
+            <div class="border-l border-gray-600 h-10 my-auto mx-2 flex-shrink-0"></div>
 
-        <!-- כפתורי גיזמו -->
-        <button id="translate-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition active" title="הזזה (W)">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4H3v3m0-3l4 4M21 3h-7v3m7-3l-4 4M3 21h7v-3M3 21l4-4m14 4h-7v-3m7 3l-4-4"></path></svg>
-        </button>
-        <button id="rotate-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition" title="סיבוב (E)">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.667 0l3.181-3.183m-11.667-1.343a8.25 8.25 0 0 1-1.12-3.832 8.25 8.25 0 0 1 1.12-3.832 8.25 8.25 0 0 1 3.833-1.12 8.25 8.25 0 0 1 3.833 1.12 8.25 8.25 0 0 1 1.12 3.832 8.25 8.25 0 0 1-1.12 3.832 8.25 8.25 0 0 1-3.833 1.12 8.25 8.25 0 0 1-3.833-1.12Z" />
-            </svg>
-        </button>
-        <button id="scale-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition" title="גודל (R)">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8V5h3m12 0h3v3m0 11v3h-3m-12 0H3v-3"></path></svg>
-        </button>
+            <!-- כפתורי גיזמו -->
+            <button id="translate-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition active flex-shrink-0" title="הזזה (W)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4H3v3m0-3l4 4M21 3h-7v3m7-3l-4 4M3 21h7v-3M3 21l4-4m14 4h-7v-3m7 3l-4-4"></path></svg>
+            </button>
+            <button id="rotate-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="סיבוב (E)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.667 0l3.181-3.183m-11.667-1.343a8.25 8.25 0 0 1-1.12-3.832 8.25 8.25 0 0 1 1.12-3.832 8.25 8.25 0 0 1 3.833-1.12 8.25 8.25 0 0 1 3.833 1.12 8.25 8.25 0 0 1 1.12 3.832 8.25 8.25 0 0 1-1.12 3.832 8.25 8.25 0 0 1-3.833 1.12 8.25 8.25 0 0 1-3.833-1.12Z" />
+                </svg>
+            </button>
+            <button id="scale-btn" class="gizmo-btn p-3 text-white rounded-full hover:bg-gray-700 transition flex-shrink-0" title="גודל (R)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8V5h3m12 0h3v3m0 11v3h-3m-12 0H3v-3"></path></svg>
+            </button>
 
-        <!-- קו הפרדה חדש -->
-        <div class="border-l border-gray-600 h-10 my-auto mx-2"></div>
+            <!-- קו הפרדה חדש -->
+            <div class="border-l border-gray-600 h-10 my-auto mx-2 flex-shrink-0"></div>
 
-        <!-- כפתורי קואליציה ואופוזיציה -->
-        <button id="coalition-btn" class="px-4 py-2 text-white rounded-full bg-blue-600 hover:bg-blue-700 transition text-sm font-semibold" title="קואליציה">
-            קואליציה
-        </button>
-        <button id="opposition-btn" class="px-4 py-2 text-white rounded-full bg-orange-600 hover:bg-orange-700 transition text-sm font-semibold" title="אופוזיציה">
-            אופוזיציה
-        </button>
+            <!-- כפתורי קואליציה ואופוזיציה -->
+            <button id="coalition-btn" class="px-4 py-2 text-white rounded-full bg-blue-600 hover:bg-blue-700 transition text-sm font-semibold flex-shrink-0" title="קואליציה">
+                קואליציה
+            </button>
+            <button id="opposition-btn" class="px-4 py-2 text-white rounded-full bg-orange-600 hover:bg-orange-700 transition text-sm font-semibold flex-shrink-0" title="אופוזיציה">
+                אופוזיציה
+            </button>
 
-        <!-- כפתור מחיקה -->
-        <button id="delete-btn" class="p-3 text-white rounded-full hover:bg-red-600 transition" title="מחק (Delete)">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        </button>
-
+            <!-- כפתור מחיקה -->
+            <button id="delete-btn" class="p-3 text-white rounded-full hover:bg-red-600 transition flex-shrink-0" title="מחק (Delete)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+            <!-- רווח קטן בסוף במובייל לגלילה נוחה -->
+            <div class="w-4 flex-shrink-0 md:hidden"></div>
+        </div>
     </div>
 
-    <!-- פאנלים צפים -->
-    <div id="scene-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 p-6 rounded-lg shadow-xl hidden">
-        <h2 class="text-xl font-semibold text-white mb-4 draggable-handle cursor-move">בקרי סצנה</h2>
-        <button class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white close-panel-btn">
-             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div class="space-y-3">
-            <button id="save-scene-btn" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white transition-colors">שמור סצנה</button>
-            <div>
-                <label for="load-scene-input" class="block text-sm font-medium text-gray-300 mb-1">טען סצנה (JSON)</label>
-                <input type="file" id="load-scene-input" class="texture-upload-input" accept=".json">
+
+    <!-- פאנלים צפים / מסך מלא -->
+    <div id="scene-panel" class="fixed inset-0 z-40 bg-gray-900/95 backdrop-blur-sm hidden flex flex-col md:inset-auto md:z-auto md:top-20 md:right-5 md:w-72 md:max-w-xs md:rounded-lg md:shadow-xl md:bg-gray-900/80 md:backdrop-blur-sm">
+        <div class="p-4 md:p-6 pb-4 flex justify-between items-center draggable-handle cursor-move sticky top-0 bg-gray-900/80 md:bg-transparent z-10">
+            <h2 class="text-xl font-semibold text-white">בקרי סצנה</h2>
+            <button class="p-1 text-gray-400 hover:text-white close-panel-btn">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="overflow-y-auto p-4 md:p-6 pt-0 hide-scrollbar mobile-panel-content flex-grow">
+            <div class="space-y-3">
+                <button id="save-scene-btn" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white transition-colors">שמור סצנה</button>
+                <div>
+                    <label for="load-scene-input" class="block text-sm font-medium text-gray-300 mb-1">טען סצנה (JSON)</label>
+                    <input type="file" id="load-scene-input" class="texture-upload-input" accept=".json">
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="lighting-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden flex flex-col max-h-[80vh]">
-        <div class="p-6 pb-4 flex justify-between items-center draggable-handle cursor-move">
+    <div id="lighting-panel" class="fixed inset-0 z-40 bg-gray-900/95 backdrop-blur-sm hidden flex flex-col md:inset-auto md:z-auto md:top-20 md:right-5 md:w-72 md:max-w-xs md:rounded-lg md:shadow-xl md:bg-gray-900/80 md:backdrop-blur-sm md:max-h-[80vh]">
+        <div class="p-4 md:p-6 pb-4 flex justify-between items-center draggable-handle cursor-move sticky top-0 bg-gray-900/80 md:bg-transparent z-10">
             <h2 class="text-xl font-semibold text-white">בקרי תאורה</h2>
             <button class="p-1 text-gray-400 hover:text-white close-panel-btn">
                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="overflow-y-auto p-6 pt-0">
+        <div class="overflow-y-auto p-4 md:p-6 pt-0 hide-scrollbar mobile-panel-content flex-grow">
             <!-- רשימת מנורות -->
             <h3 class="text-lg font-medium text-gray-200 mb-2">מנורות בסצנה</h3>
-            <div id="light-list" class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+            <div id="light-list" class="space-y-2 mb-4 max-h-40 overflow-y-auto hide-scrollbar">
                 <div class="text-gray-400 text-sm">אין מנורות נקודתיות להצגה.</div>
             </div>
              <!-- כפתור הוספת מנורה -->
@@ -217,58 +196,43 @@
         </div>
     </div>
 
-     <!-- פאנל אפקטים -->
-    <div id="effects-panel" class="fixed top-1/2 left-5 -translate-y-1/2 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 p-6 rounded-lg shadow-xl hidden">
-        <h2 class="text-xl font-semibold text-white mb-4 draggable-handle cursor-move">אפקטים (זוהר)</h2>
-         <button class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white close-panel-btn">
-             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div class="space-y-3">
-            <h3 class="text-lg font-medium text-gray-200">זוהר (Bloom)</h3>
-            <label for="bloom-strength" class="block text-sm font-medium text-gray-300">חוזק</label>
-            <input type="range" id="bloom-strength" min="0" max="3" step="0.01" value="0.5" class="w-full">
-            <label for="bloom-radius" class="block text-sm font-medium text-gray-300">רדיוס</label>
-            <input type="range" id="bloom-radius" min="0" max="1" step="0.01" value="0.1" class="w-full">
-            <label for="bloom-threshold" class="block text-sm font-medium text-gray-300">סף</label>
-            <input type="range" id="bloom-threshold" min="0" max="1" step="0.01" value="0.8" class="w-full">
-        </div>
-    </div>
+    <!-- [נמחק] פאנל אפקטים -->
 
-    <div id="objects-panel" class="fixed top-20 right-5 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden h-[70vh] flex flex-col">
-         <div class="p-6 pb-4 flex justify-between items-center draggable-handle cursor-move">
+    <div id="objects-panel" class="fixed inset-0 z-40 bg-gray-900/95 backdrop-blur-sm hidden flex flex-col md:inset-auto md:z-auto md:top-20 md:right-5 md:w-72 md:max-w-xs md:rounded-lg md:shadow-xl md:bg-gray-900/80 md:backdrop-blur-sm md:h-[70vh]">
+         <div class="p-4 md:p-6 pb-4 flex justify-between items-center draggable-handle cursor-move sticky top-0 bg-gray-900/80 md:bg-transparent z-10">
             <h2 class="text-xl font-semibold text-white">אובייקטים בסצנה</h2>
             <button class="p-1 text-gray-400 hover:text-white close-panel-btn">
                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div id="object-list" class="space-y-4 overflow-y-auto p-6 pt-0 flex-grow">
+        <div id="object-list" class="space-y-4 overflow-y-auto p-4 md:p-6 pt-0 hide-scrollbar mobile-panel-content flex-grow">
             <!-- הרשימה תתמלא באופן דינמי על ידי JavaScript -->
             <div class="text-gray-400">טוען מודל...</div>
         </div>
     </div>
 
     <!-- פאנל אובייקט בודד (שמאל) -->
-    <div id="single-object-panel" class="fixed top-1/2 left-5 -translate-y-1/2 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden">
-        <div class="draggable-handle cursor-move p-6 pb-2">
+    <div id="single-object-panel" class="fixed inset-0 z-40 bg-gray-900/95 backdrop-blur-sm hidden flex flex-col md:inset-auto md:z-auto md:top-1/2 md:left-5 md:-translate-y-1/2 md:w-72 md:max-w-xs md:rounded-lg md:shadow-xl md:bg-gray-900/80 md:backdrop-blur-sm md:max-h-[80vh]">
+        <div class="p-4 md:p-6 pb-2 flex justify-between items-center draggable-handle cursor-move sticky top-0 bg-gray-900/80 md:bg-transparent z-10">
              <h3 id="single-object-title-static" class="font-semibold text-lg text-white truncate">אובייקט</h3>
+             <button id="close-single-panel-btn" class="p-1 text-gray-400 hover:text-white">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+             </button>
         </div>
-        <button id="close-single-panel-btn" class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white">
-             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div id="single-object-controls" class="p-6 pt-2 max-h-[70vh] overflow-y-auto">
+        <div id="single-object-controls" class="overflow-y-auto p-4 md:p-6 pt-0 hide-scrollbar mobile-panel-content flex-grow">
             <!-- התוכן יוכנס לכאן דינמית -->
         </div>
     </div>
 
     <!-- פאנל מנורה נקודתית (שמאל) -->
-    <div id="point-light-panel" class="fixed top-1/2 left-5 -translate-y-1/2 w-11/12 max-w-xs sm:w-72 bg-gray-900/80 backdrop-blur-sm text-white z-40 rounded-lg shadow-xl hidden">
-        <div class="draggable-handle cursor-move p-6 pb-2">
+    <div id="point-light-panel" class="fixed inset-0 z-40 bg-gray-900/95 backdrop-blur-sm hidden flex flex-col md:inset-auto md:z-auto md:top-1/2 md:left-5 md:-translate-y-1/2 md:w-72 md:max-w-xs md:rounded-lg md:shadow-xl md:bg-gray-900/80 md:backdrop-blur-sm md:max-h-[80vh]">
+        <div class="p-4 md:p-6 pb-2 flex justify-between items-center draggable-handle cursor-move sticky top-0 bg-gray-900/80 md:bg-transparent z-10">
              <h3 id="point-light-title" class="font-semibold text-lg text-white truncate">מנורה נקודתית</h3>
+             <button id="close-point-light-panel-btn" class="p-1 text-gray-400 hover:text-white">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+             </button>
         </div>
-        <button id="close-point-light-panel-btn" class="absolute top-2 right-2 p-1 text-gray-400 hover:text-white">
-             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div id="point-light-controls" class="p-6 pt-2 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div id="point-light-controls" class="overflow-y-auto p-4 md:p-6 pt-0 space-y-4 hide-scrollbar mobile-panel-content flex-grow">
              <button
                 class="duplicate-btn w-full px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
                 data-object-id=""> <!-- ID יתעדכן דינמית -->
@@ -329,14 +293,14 @@
         import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        // [נמחק] import { UnrealBloomPass }
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
         import { TransformControls } from 'three/addons/controls/TransformControls.js';
         import * as TWEEN from 'tween';
         import { AnimationMixer } from 'three';
 
         let scene, camera, renderer, controls;
-        let composer, bloomPass;
+        let composer; // [נמחק] bloomPass
         let transformControls;
         let sceneObjects = [];
         let pointLights = [];
@@ -384,7 +348,7 @@
         const addPointLightBtn = document.getElementById('add-point-light-btn');
         const sceneBtn = document.getElementById('scene-btn');
         const lightingBtn = document.getElementById('lighting-btn');
-        const effectsBtn = document.getElementById('effects-btn');
+        // [נמחק] effectsBtn
         const toggleLightHelpersBtn = document.getElementById('toggle-light-helpers-btn');
         const objectsBtn = document.getElementById('objects-btn');
         const undoBtn = document.getElementById('undo-btn');
@@ -396,7 +360,7 @@
         const deleteBtn = document.getElementById('delete-btn');
         const scenePanel = document.getElementById('scene-panel');
         const lightingPanel = document.getElementById('lighting-panel');
-        const effectsPanel = document.getElementById('effects-panel');
+        // [נמחק] effectsPanel
         const objectsPanel = document.getElementById('objects-panel');
         const singleObjectPanel = document.getElementById('single-object-panel');
         const closeSinglePanelBtn = document.getElementById('close-single-panel-btn');
@@ -411,10 +375,8 @@
         const plShadowBiasSlider = document.getElementById('pl-shadow-bias-slider');
         const plShadowNormalBiasSlider = document.getElementById('pl-shadow-normal-bias-slider');
         const coalitionBtn = document.getElementById('coalition-btn');
-        const bloomStrengthSlider = document.getElementById('bloom-strength');
-        const bloomRadiusSlider = document.getElementById('bloom-radius');
-        const bloomThresholdSlider = document.getElementById('bloom-threshold');
-        const allPanels = [scenePanel, lightingPanel, effectsPanel, objectsPanel, singleObjectPanel, pointLightPanel];
+        // [נמחק] bloom sliders
+        const allPanels = [scenePanel, lightingPanel, objectsPanel, singleObjectPanel, pointLightPanel]; // [נמחק] effectsPanel מהרשימה
 
         // --- Initialization ---
         init();
@@ -479,14 +441,9 @@
             });
             scene.add(transformControls);
 
-            // הגדרת אפקט Bloom
             composer = new EffectComposer(renderer);
             const renderPass = new RenderPass(scene, camera); composer.addPass(renderPass);
-            bloomPass = new UnrealBloomPass(new THREE.Vector2(sceneContainer.clientWidth, sceneContainer.clientHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = parseFloat(bloomThresholdSlider.value);
-            bloomPass.strength = parseFloat(bloomStrengthSlider.value);
-            bloomPass.radius = parseFloat(bloomRadiusSlider.value);
-            composer.addPass(bloomPass);
+            // [נמחק] bloomPass
             const outputPass = new OutputPass(); composer.addPass(outputPass);
 
             loadAllModels();
@@ -530,14 +487,17 @@
             loadInput.addEventListener('change', loadScene);
             sceneBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(scenePanel); });
             lightingBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(lightingPanel); });
-            effectsBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(effectsPanel); });
-            toggleLightHelpersBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleLightHelpers(); });
+            // [נמחק] effectsBtn listener
             objectsBtn.addEventListener('click', (e) => { e.stopPropagation(); openPanel(objectsPanel); });
-
+            toggleLightHelpersBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleLightHelpers(); });
             coalitionBtn.addEventListener('click', (e) => { e.stopPropagation(); loadCoalitionModels(); });
 
             document.querySelectorAll('.close-panel-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => { e.stopPropagation(); const panel = e.target.closest('.fixed'); if (panel) panel.classList.add('hidden'); });
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const panel = e.target.closest('.fixed');
+                    if (panel) panel.classList.add('hidden');
+                });
             });
             undoBtn.addEventListener('click', (e) => { e.stopPropagation(); undo(); });
             redoBtn.addEventListener('click', (e) => { e.stopPropagation(); redo(); });
@@ -553,14 +513,11 @@
             pointLightPanel.addEventListener('click', onPointLightPanelClick);
             pointLightPanel.addEventListener('input', onPointLightPanelChange);
             pointLightPanel.addEventListener('change', onPointLightPanelChange);
-
-            bloomStrengthSlider.addEventListener('input', onBloomChange);
-            bloomRadiusSlider.addEventListener('input', onBloomChange);
-            bloomThresholdSlider.addEventListener('input', onBloomChange);
+            // [נמחק] bloom slider listeners
 
             makeDraggable(scenePanel);
             makeDraggable(lightingPanel);
-            makeDraggable(effectsPanel);
+            // [נמחק] makeDraggable(effectsPanel);
             makeDraggable(objectsPanel);
             makeDraggable(singleObjectPanel);
             makeDraggable(pointLightPanel);
@@ -618,12 +575,7 @@
              addHistory({ type: 'addLight', lightType: 'point', addedLight: light, addedHelper: helper, addedSceneObjectData: data });
         }
 
-        function onBloomChange() {
-            bloomPass.threshold = parseFloat(bloomThresholdSlider.value);
-            bloomPass.strength = parseFloat(bloomStrengthSlider.value);
-            bloomPass.radius = parseFloat(bloomRadiusSlider.value);
-        }
-
+        // [נמחק] onBloomChange
 
         async function loadAnimation(url) {
             return new Promise((resolve, reject) => {
@@ -708,7 +660,7 @@
         }
 
         async function loadAllModels(modelsToLoad = null) {
-            mixers = [];
+            mixers = []; // נקה את המיקסרים הקיימים
 
             const modelsToRemove = sceneObjects.filter(obj => obj.parentModel && !obj.isLightHelper).map(obj => obj.parentModel);
             const uniqueModelsToRemove = [...new Set(modelsToRemove)];
@@ -730,27 +682,25 @@
                         isLocked: modelData.url === KNESSET_MODEL_URL
                     },
                     materials: modelData.materials,
-                    hasAnimation: modelData.hasAnimation // [נוסף] קריאת נתוני האנימציה
+                    hasAnimation: modelData.hasAnimation
                 }));
             } else {
                 sidebarList.innerHTML = `<div class="text-gray-400">טוען מודלים...</div>`;
                 modelList = [
-                     { url: KNESSET_MODEL_URL, options: { scale: new THREE.Vector3(0.5, 0.5, 0.5), position: new THREE.Vector3(0, 0, 0), nameLogic: getModelNameLogic(KNESSET_MODEL_URL), isLocked: true }, materials: null },
-                    { url: CHAIR_MODEL_URL, options: { scale: new THREE.Vector3(3, 3, 3), position: new THREE.Vector3(0, 0, 0), nameLogic: getModelNameLogic(CHAIR_MODEL_URL), isLocked: false }, materials: null }
+                     { url: KNESSET_MODEL_URL, options: { scale: new THREE.Vector3(0.5, 0.5, 0.5), position: new THREE.Vector3(0, 0, 0), nameLogic: getModelNameLogic(KNESSET_MODEL_URL), isLocked: true }, materials: null, hasAnimation: false },
+                    { url: CHAIR_MODEL_URL, options: { scale: new THREE.Vector3(3, 3, 3), position: new THREE.Vector3(0, 0, 0), nameLogic: getModelNameLogic(CHAIR_MODEL_URL), isLocked: false }, materials: null, hasAnimation: false }
                 ];
             }
             try {
-                // [נוסף] טעינת האנימציה לפני המודלים (אם טוענים אנימציה)
                  let animationClip = null;
                  if (modelList.some(m => m.hasAnimation)) {
                      try {
                          animationClip = await loadAnimation(ANIMATION_URL);
-                         sittingClapAnimation = animationClip; // שמור לשימוש חוזר
+                         sittingClapAnimation = animationClip;
                      } catch (animError) {
                          console.error("Failed to load animation:", animError);
                      }
                  }
-
 
                 for (const modelData of modelList) {
                      let newModel;
@@ -788,7 +738,7 @@
                                      }
                                      if (matProps.emissiveIntensity !== undefined) {
                                         mat.emissiveIntensity = matProps.emissiveIntensity;
-                                        if(mat.emissiveIntensity > 0 && mat.emissive.getHexString() === '000000') {
+                                        if(targetObject.name === 'פאנל LED' && mat.emissiveIntensity > 0 && mat.emissive.getHexString() === '000000') {
                                             mat.emissive.setHex(0xFF0000);
                                         }
                                      }
@@ -809,10 +759,9 @@
                              }
                          }
                      }
-                      // [נוסף] הפעל אנימציה אם נדרש
-                     if (modelData.hasAnimation && animationClip) {
-                         playAnimationOnModel(newModel, animationClip);
-                     }
+                      if (modelData.hasAnimation && animationClip) {
+                          playAnimationOnModel(newModel, animationClip);
+                      }
                 }
                 console.log("All models loaded successfully.");
                 populateSidebar();
@@ -958,66 +907,41 @@
         function populateLightList() { lightListContainer.innerHTML = ''; const lightsToList = sceneObjects.filter(obj => obj.isLightHelper && obj.lightType === 'point'); if (lightsToList.length === 0) { lightListContainer.innerHTML = '<div class="text-gray-400 text-sm">אין מנורות נקודתיות להצגה.</div>'; return; } lightsToList.forEach(obj => { const lightElement = document.createElement('div'); lightElement.id = `light-item-${obj.id}`; lightElement.className = 'p-3 bg-gray-600 rounded-lg shadow cursor-pointer hover:bg-gray-500 light-item'; lightElement.dataset.objectId = obj.id; lightElement.innerHTML = ` <h3 class="font-semibold text-base text-white pointer-events-none">${obj.name.replace(' (Helper)', '')}</h3> <p class="text-xs text-gray-300 pointer-events-none">ID: ...${obj.id.slice(-6)}</p> `; if (selectedObjects.includes(obj)) { lightElement.classList.add('selected-object'); } lightListContainer.appendChild(lightElement); }); }
 
         // --- Panel Management ---
-        function openPanel(panelToOpen) {
-             allPanels.forEach(panel => {
-                 if (panel === panelToOpen) {
-                     panel.classList.remove('hidden');
-                 } else {
-                     // Don't hide the single panels when opening a main panel
-                     if (!((panel === singleObjectPanel || panel === pointLightPanel) &&
-                           (panelToOpen === scenePanel || panelToOpen === lightingPanel || panelToOpen === effectsPanel || panelToOpen === objectsPanel))) {
-                         panel.classList.add('hidden');
-                     }
-                 }
-             });
+         function openPanel(panelToOpen) {
+            const isOpening = panelToOpen.classList.contains('hidden');
+            const isSecondaryPanel = panelToOpen === singleObjectPanel || panelToOpen === pointLightPanel;
 
-             // Set default positions only if not already positioned by dragging
-             if (!panelToOpen.style.left && !panelToOpen.style.top) {
-                 switch (panelToOpen.id) {
-                     case 'scene-panel':
-                         panelToOpen.style.top = '5rem';
-                         panelToOpen.style.right = '1.25rem';
-                         panelToOpen.style.left = 'auto';
-                         panelToOpen.style.transform = '';
-                         break;
-                     case 'lighting-panel':
-                         panelToOpen.style.top = '30vh'; // Adjusted for better spacing
-                         panelToOpen.style.right = '1.25rem';
-                         panelToOpen.style.left = 'auto';
-                         panelToOpen.style.transform = '';
-                         break;
-                     case 'objects-panel':
-                         panelToOpen.style.top = '55vh'; // Adjusted for better spacing
-                         panelToOpen.style.right = '1.25rem';
-                         panelToOpen.style.left = 'auto';
-                         panelToOpen.style.transform = '';
-                         break;
-                     case 'single-object-panel':
-                         panelToOpen.style.top = '25%';
-                         panelToOpen.style.left = '1.25rem';
-                         panelToOpen.style.right = 'auto';
-                         panelToOpen.style.transform = 'translateY(-50%)';
-                         break;
-                     case 'point-light-panel':
-                         panelToOpen.style.top = '50%';
-                         panelToOpen.style.left = '1.25rem';
-                         panelToOpen.style.right = 'auto';
-                         panelToOpen.style.transform = 'translateY(-50%)';
-                         break;
-                     case 'effects-panel':
-                         panelToOpen.style.top = '75%';
-                         panelToOpen.style.left = '1.25rem';
-                         panelToOpen.style.right = 'auto';
-                         panelToOpen.style.transform = 'translateY(-50%)';
-                         break;
-                     default: // Fallback for safety
-                        panelToOpen.style.top = '5rem';
-                        panelToOpen.style.right = '1.25rem';
-                        panelToOpen.style.left = 'auto';
-                        panelToOpen.style.transform = '';
+            // Hide all main panels first, except the one being opened/closed
+            allPanels.forEach(p => {
+                 if (p !== panelToOpen && (p !== singleObjectPanel && p !== pointLightPanel)) {
+                     p.classList.add('hidden');
                  }
+            });
+             // Close secondary panels if opening a main panel
+             if (!isSecondaryPanel) {
+                 closeSinglePanels();
              }
-         }
+
+            // Toggle the target panel
+            panelToOpen.classList.toggle('hidden');
+
+            // Reset position only when opening (going from hidden to visible) on desktop
+            if (!isOpening && window.innerWidth >= 768 && (!panelToOpen.style.left || !panelToOpen.style.top) ) {
+                const topBarHeight = document.getElementById('top-menu-bar-wrapper')?.offsetHeight || 60;
+                if (isSecondaryPanel) {
+                    panelToOpen.style.left = '1.25rem';
+                    panelToOpen.style.right = 'auto';
+                    panelToOpen.style.transform = 'translateY(-50%)';
+                    panelToOpen.style.top = '50%';
+                } else {
+                    panelToOpen.style.right = '1.25rem';
+                    panelToOpen.style.left = 'auto';
+                    panelToOpen.style.transform = '';
+                    panelToOpen.style.top = `${topBarHeight + 20}px`;
+                }
+            }
+        }
+
         function closeSinglePanels() { singleObjectPanel.classList.add('hidden'); pointLightPanel.classList.add('hidden'); }
 
         // --- UI Interaction Handlers ---
@@ -1188,7 +1112,7 @@
                 let chairControlsHtml = '';
 
                 if (!isChairModel) {
-                    materialControlsHtml = `
+                     materialControlsHtml = `
                         <button class="revert-btn w-full px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 rounded text-white transition-colors" data-object-id="${obj.id}">שחזר חומר לברירת מחדל</button>
                         <hr class="border-gray-600">
                         <h4 class="font-semibold text-gray-200">בקרת חומרים</h4>
@@ -1276,6 +1200,9 @@
         }
 
         function makeDraggable(panel) {
+            // השבתת גרירה במובייל
+            if (window.innerWidth < 768) return;
+
             const handle = panel.querySelector('.draggable-handle');
             if (!handle) return;
             let isDragging = false, offsetX, offsetY;
@@ -1816,13 +1743,7 @@
                     shadowBias: pl.light.shadow.bias,
                     shadowNormalBias: pl.light.shadow.normalBias
                 })),
-                 effects: {
-                     bloom: {
-                         strength: bloomPass.strength,
-                         radius: bloomPass.radius,
-                         threshold: bloomPass.threshold
-                     }
-                 }
+                 // [נמחק] effects שמירה
             };
             const models = [];
             const processedModels = new Set();
@@ -1840,7 +1761,7 @@
                         scale: transformData.scale.toArray()
                     },
                     materials: {},
-                    hasAnimation: !!parentModel.userData.mixer // [נוסף] שמירת מידע על אנימציה
+                    hasAnimation: !!parentModel.userData.mixer
                 };
 
                 const childMeshes = sceneObjects.filter(o => o.parentModel === parentModel);
@@ -1907,21 +1828,7 @@
                              }
                          }
 
-                         // Load Bloom settings
-                         if (config.effects && config.effects.bloom) {
-                            bloomPass.strength = config.effects.bloom.strength;
-                            bloomPass.radius = config.effects.bloom.radius;
-                            bloomPass.threshold = config.effects.bloom.threshold;
-                            bloomStrengthSlider.value = config.effects.bloom.strength;
-                            bloomRadiusSlider.value = config.effects.bloom.radius;
-                            bloomThresholdSlider.value = config.effects.bloom.threshold;
-                         } else {
-                             // Reset bloom to default if not in save file
-                             bloomStrengthSlider.value = 0.5;
-                             bloomRadiusSlider.value = 0.1;
-                             bloomThresholdSlider.value = 0.8;
-                             onBloomChange();
-                         }
+                         // [נמחק] טעינת Bloom settings
 
                          scene.environment = null; scene.userData.hdriDataUrl = null; // Ensure HDRI is cleared
 
@@ -1932,14 +1839,9 @@
                             createPointLight(new THREE.Vector3(-5, 15, 5), 100, 100, 0xffffff, true, 0, 0.05);
                              // ... add other defaults if needed
                          }
-                         // Reset bloom to default if no config exists
-                         bloomStrengthSlider.value = 0.5;
-                         bloomRadiusSlider.value = 0.1;
-                         bloomThresholdSlider.value = 0.8;
-                         onBloomChange();
+                         // [נמחק] Reset bloom to default if no config exists
                      }
-                     // Load Models (this function already clears existing models except helpers)
-                     await loadAllModels(finalData.models || []); // Pass model data including animation flag
+                     await loadAllModels(finalData.models || []);
 
                  } catch (err) {
                      console.error("Error loading JSON file:", err);
@@ -1952,7 +1854,22 @@
 
 
         // --- Rendering Loop & Resize ---
-        function onWindowResize() { const width = sceneContainer.clientWidth; const height = sceneContainer.clientHeight; camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height); composer.setSize(width, height); }
+        function onWindowResize() {
+            const width = sceneContainer.clientWidth;
+            const height = sceneContainer.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+            composer.setSize(width, height);
+
+            allPanels.forEach(panel => {
+                 const oldHandle = panel.querySelector('.draggable-handle');
+                 if (oldHandle && oldHandle._initDrag) {
+                     // אין דרך פשוטה להסיר listener אנונימי, נסתמך על הבדיקה ב-makeDraggable
+                 }
+                 makeDraggable(panel);
+            });
+        }
 
         function animate() {
             requestAnimationFrame(animate);
